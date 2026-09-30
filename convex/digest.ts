@@ -3,7 +3,6 @@
 import { render } from "@react-email/render";
 import { v } from "convex/values";
 import { createElement } from "react";
-import { isEmailAllowed } from "../lib/allowlist";
 import { selectDigestItems, shouldSendDigest } from "../lib/digestSelect";
 import {
   FEEDBACK_TOKEN_TTL_MS,
@@ -21,6 +20,7 @@ interface DigestProfile {
   threshold: number;
   frequency: "instant" | "daily" | "weekly";
   wildcards: number;
+  subscribed: boolean;
   lastDigestAt: number | undefined;
 }
 
@@ -70,11 +70,7 @@ async function sendForProfile(
   profile: DigestProfile,
   env: DigestEnv,
 ): Promise<void> {
-  // Only allowlisted users ever receive email.
-  if (!isEmailAllowed(profile.email, process.env.ALLOWED_EMAILS)) {
-    console.warn(`digest: ${profile.email} not on allowlist, skipping`);
-    return;
-  }
+  if (!profile.subscribed) return;
   if (
     !env.force &&
     !shouldSendDigest(profile.frequency, profile.lastDigestAt, env.now)
@@ -126,10 +122,21 @@ async function sendForProfile(
     });
   }
 
+  const unsubscribeToken = await signFeedbackToken(
+    {
+      userId: profile.userId,
+      listingId: "-", // unused for unsubscribe tokens
+      kind: "unsubscribe",
+      exp: env.now + 90 * 86_400_000,
+    },
+    env.secret,
+  );
   const html = await render(
     createElement(DigestEmail, {
       items,
       matchesUrl: `${env.appUrl}/matches`,
+      settingsUrl: `${env.appUrl}/settings`,
+      unsubscribeUrl: `${env.siteUrl}/email/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`,
     }),
   );
   await sendEmail({

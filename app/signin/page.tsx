@@ -1,14 +1,18 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import Turnstile from "@/components/Turnstile";
+import { convexSiteUrl } from "@/lib/convexSiteUrl";
 
 export default function SignInPage() {
   const { signIn } = useAuthActions();
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -17,8 +21,20 @@ export default function SignInPage() {
     setError(null);
     setBusy(true);
     try {
-      await signIn("resend-otp", { email });
-      setStep("code");
+      const res = await fetch(`${convexSiteUrl()}/auth/request-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, turnstileToken: turnstileToken || undefined }),
+      });
+      if (res.status === 429) {
+        setError("Too many sign-in attempts — please wait a bit and try again.");
+      } else if (res.status === 403) {
+        setError("Captcha check failed — please retry it.");
+      } else if (!res.ok) {
+        setError("Couldn't send a code to that address.");
+      } else {
+        setStep("code");
+      }
     } catch {
       setError("Couldn't send a code to that address.");
     } finally {
@@ -53,6 +69,7 @@ export default function SignInPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="rounded border border-neutral-300 px-3 py-2"
           />
+          <Turnstile onToken={setTurnstileToken} />
           <button
             type="submit"
             disabled={busy}
@@ -60,6 +77,12 @@ export default function SignInPage() {
           >
             {busy ? "Sending…" : "Email me a code"}
           </button>
+          <p className="text-center text-xs text-neutral-400">
+            New here? Signing in creates your account.{" "}
+            <Link href="/privacy" className="underline">
+              Privacy
+            </Link>
+          </p>
         </form>
       ) : (
         <form onSubmit={handleVerify} className="flex w-full max-w-sm flex-col gap-3">

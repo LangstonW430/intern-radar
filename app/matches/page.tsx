@@ -24,6 +24,7 @@ export default function MatchesPage() {
 
 function MatchesContent() {
   const matches = useQuery(api.matchesApi.list, {});
+  const profile = useQuery(api.profile.getMine);
   const record = useMutation(api.feedbackFns.record);
   const searchParams = useSearchParams();
   // Email "I applied" links land here with ?prompt=<listingId> so the
@@ -48,6 +49,15 @@ function MatchesContent() {
       <Header />
       <main className="mx-auto max-w-3xl p-6">
         <h1 className="mb-4 text-xl font-semibold">Your matches</h1>
+        {profile === null && (
+          <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm">
+            Finish setting up your profile to get matches:{" "}
+            <a href="/onboarding" className="font-medium underline">
+              complete onboarding
+            </a>
+            .
+          </div>
+        )}
         {matches === undefined && (
           <p className="text-neutral-500">Loading…</p>
         )}

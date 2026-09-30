@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as authGuard from "../authGuard.js";
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
 import type * as digestData from "../digestData.js";
@@ -20,8 +21,10 @@ import type * as lib_github from "../lib/github.js";
 import type * as lib_resendClient from "../lib/resendClient.js";
 import type * as matchesApi from "../matchesApi.js";
 import type * as ml from "../ml.js";
+import type * as onboarding from "../onboarding.js";
 import type * as otp from "../otp.js";
 import type * as profile from "../profile.js";
+import type * as resume from "../resume.js";
 import type * as scoring from "../scoring.js";
 
 import type {
@@ -32,6 +35,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  authGuard: typeof authGuard;
   crons: typeof crons;
   digest: typeof digest;
   digestData: typeof digestData;
@@ -43,8 +47,10 @@ declare const fullApi: ApiFromModules<{
   "lib/resendClient": typeof lib_resendClient;
   matchesApi: typeof matchesApi;
   ml: typeof ml;
+  onboarding: typeof onboarding;
   otp: typeof otp;
   profile: typeof profile;
+  resume: typeof resume;
   scoring: typeof scoring;
 }>;
 

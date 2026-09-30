@@ -2,6 +2,17 @@
 
 Status: **approved 2026-09-30** with owner changes folded in (JD fetching moved to the Actions job with expanded source coverage; no-JD penalty; strict incremental exports). Building.
 
+> **Scope change (owner, 2026-09-30): open sign-up from day one.** No allowlist —
+> anyone can create an account; `ADMIN_EMAILS` gates `/admin` surfaces only.
+> Added to Phase 1: onboarding (resume upload → unpdf extraction → PDF deleted →
+> preference questions → digest settings; `profile.seed.json` becomes dev-only),
+> account + data deletion, Cloudflare Turnstile plus per-email/per-IP/global
+> rate limits on sign-in emails (Resend's 100/day cap is shared with digests),
+> unsubscribe links (signed token, no sign-in needed) + email-settings link in
+> every digest, and a `/privacy` page. Bootstrap labels stay the owner's only —
+> they train the global model; other users personalize via their own feedback.
+> Build-order steps 14–16 below.
+
 ---
 
 ## Part A — Step 0 findings (verified 2026-09-30)
@@ -262,5 +273,8 @@ Caches: uv env, HF model (~130 MB), Playwright chromium (~300 MB) — all in Act
 | 11 | Training + eval + versioned push + promotion gate | `feat: personalized training with precision@10 gate` |
 | 12 | Matches page (score, plain-language top features, no-JD label, Applied→good-suggestion prompt, 👍/👎) + settings page | `feat: matches and settings ui` |
 | 13 | Digest: React Email (no-JD label), Resend, HMAC links, per-frequency crons, wildcards | `feat: email digests` |
+| 14 | **Open sign-up + abuse protection:** drop `ALLOWED_EMAILS` (add `ADMIN_EMAILS`), Turnstile-gated `/auth/request-code` with per-email (5/h), per-IP (20/h), and global-daily sign-in-email limits, single-use send permits enforced inside the OTP provider | `feat: open sign-up with turnstile and rate limits` |
+| 15 | **Onboarding:** resume upload (Convex storage) → unpdf extraction → PDF deleted → preference + digest questions; matches page routes profile-less users to `/onboarding` | `feat: onboarding flow` |
+| 16 | **Account lifecycle:** subscribed flag + signed-token unsubscribe route + digest footer links, delete-my-account (profile/matches/feedback/labels/userWeights/auth rows), `/privacy` | `feat: unsubscribe, account deletion, privacy page` |
 
 Done-when (from PROMPT.md): full pipeline end-to-end, real digest received with working feedback from email + web, precision@10 reported for model v1 vs prior-weights baseline, all pure logic tested, CLAUDE.md Commands section verified.

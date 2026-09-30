@@ -5,12 +5,18 @@ import {
   labelsImportSchema,
   modelImportSchema,
 } from "../lib/schemas/mlPayloads";
+import { z } from "zod";
 import { verifyFeedbackToken } from "../lib/feedbackToken";
 import { seedProfilePayloadSchema } from "../lib/schemas/profileSeed";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
+
+const requestCodeSchema = z.object({
+  email: z.email(),
+  turnstileToken: z.string().optional(),
+});
 
 const EXPORT_PAGE_SIZE = 200;
 
@@ -170,6 +176,131 @@ http.route({
       parsed.data,
     );
     return json(result);
+  }),
+});
+
+function corsHeaders(): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": process.env.APP_URL ?? "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    Vary: "Origin",
+  };
+}
+
+async function verifyTurnstile(
+  token: string | undefined,
+  ip: string,
+): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true; // not configured (local dev) — skip
+  if (!token) return false;
+  try {
+    const res = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret, response: token, remoteip: ip }),
+      },
+    );
+    const body = (await res.json()) as { success?: boolean };
+    return body.success === true;
+  } catch (error) {
+    console.error("turnstile verify failed", error);
+    return false;
+  }
+}
+
+http.route({
+  path: "/auth/request-code",
+  method: "OPTIONS",
+  handler: httpAction(async () => new Response(null, { status: 204, headers: corsHeaders() })),
+});
+
+http.route({
+  path: "/auth/request-code",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const headers = { ...corsHeaders(), "Content-Type": "application/json" };
+    const parsed = requestCodeSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "invalid request" }), {
+        status: 400,
+        headers,
+      });
+    }
+    const email = parsed.data.email.trim().toLowerCase();
+    const ip =
+      request.headers.get("CF-Connecting-IP") ??
+      request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ??
+      "unknown";
+
+    if (!(await verifyTurnstile(parsed.data.turnstileToken, ip))) {
+      return new Response(JSON.stringify({ error: "captcha failed" }), {
+        status: 403,
+        headers,
+      });
+    }
+    const limit = await ctx.runMutation(
+      internal.authGuard.checkLimitsAndIssuePermit,
+      { email, ip },
+    );
+    if (!limit.allowed) {
+      return new Response(
+        JSON.stringify({ error: "too many requests, try again later" }),
+        { status: 429, headers },
+      );
+    }
+    try {
+      await ctx.runAction(api.auth.signIn, {
+        provider: "resend-otp",
+        params: { email },
+      });
+    } catch (error) {
+      console.error("request-code signIn failed", error);
+      return new Response(JSON.stringify({ error: "could not send code" }), {
+        status: 500,
+        headers,
+      });
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+  }),
+});
+
+http.route({
+  path: "/email/unsubscribe",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const token = new URL(request.url).searchParams.get("token");
+    const secret = process.env.FEEDBACK_SIGNING_SECRET;
+    const appUrl = process.env.APP_URL ?? "";
+    const page = (message: string) =>
+      new Response(
+        `<!doctype html><meta charset="utf-8"><title>intern-radar</title>
+         <body style="font-family:sans-serif;max-width:32rem;margin:4rem auto">
+         <h2>intern-radar</h2><p>${message}</p>
+         <p><a href="${appUrl}/settings">Email settings</a></p></body>`,
+        { status: 200, headers: { "Content-Type": "text/html" } },
+      );
+
+    if (!token || !secret) return page("That unsubscribe link is invalid.");
+    const payload = await verifyFeedbackToken(token, secret, Date.now());
+    if (!payload || payload.kind !== "unsubscribe") {
+      return page("That unsubscribe link is invalid or has expired.");
+    }
+    try {
+      await ctx.runMutation(internal.digestData.setSubscribed, {
+        userId: payload.userId as Id<"users">,
+        subscribed: false,
+      });
+    } catch (error) {
+      console.error("unsubscribe failed", error);
+      return page("That unsubscribe link is invalid or has expired.");
+    }
+    return page(
+      "You're unsubscribed from digest emails. You can re-enable them anytime in settings.",
+    );
   }),
 });
 

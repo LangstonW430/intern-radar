@@ -27,9 +27,13 @@ export interface DigestEmailItem {
 export default function DigestEmail({
   items,
   matchesUrl,
+  settingsUrl,
+  unsubscribeUrl,
 }: {
   items: DigestEmailItem[];
   matchesUrl: string;
+  settingsUrl: string;
+  unsubscribeUrl: string;
 }) {
   return (
     <Html>
@@ -72,6 +76,16 @@ export default function DigestEmail({
           ))}
           <Text>
             <Link href={matchesUrl}>See all matches</Link>
+          </Text>
+          <Hr style={{ borderColor: "#eee", margin: "16px 0" }} />
+          <Text style={{ fontSize: 12, color: "#999" }}>
+            <Link href={settingsUrl} style={{ color: "#999" }}>
+              Email settings
+            </Link>
+            {"   ·   "}
+            <Link href={unsubscribeUrl} style={{ color: "#999" }}>
+              Unsubscribe
+            </Link>
           </Text>
         </Container>
       </Body>

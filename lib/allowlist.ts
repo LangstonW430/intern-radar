@@ -1,6 +1,6 @@
 /**
- * Allowlist gating for sign-in. ALLOWED_EMAILS is a comma-separated list of
- * email addresses; matching is case-insensitive and whitespace-tolerant.
+ * Email-list matching, case-insensitive and whitespace-tolerant. Sign-up is
+ * open; this now only gates admin surfaces via ADMIN_EMAILS.
  */
 
 export function parseAllowedEmails(raw: string | undefined): string[] {
@@ -18,4 +18,12 @@ export function isEmailAllowed(
   if (!email) return false;
   const allowed = parseAllowedEmails(allowedRaw);
   return allowed.includes(email.trim().toLowerCase());
+}
+
+/** True when the email is in ADMIN_EMAILS. Closed by default. */
+export function isAdminEmail(
+  email: string | undefined,
+  adminRaw: string | undefined,
+): boolean {
+  return isEmailAllowed(email, adminRaw);
 }

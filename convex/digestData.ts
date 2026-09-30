@@ -13,8 +13,21 @@ export const listProfiles = internalQuery({
       threshold: p.threshold,
       frequency: p.frequency,
       wildcards: p.wildcards,
+      subscribed: p.subscribed !== false, // undefined = subscribed
       lastDigestAt: p.lastDigestAt,
     }));
+  },
+});
+
+export const setSubscribed = internalMutation({
+  args: { userId: v.id("users"), subscribed: v.boolean() },
+  handler: async (ctx, { userId, subscribed }) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) throw new Error("no profile for user");
+    await ctx.db.patch(profile._id, { subscribed });
   },
 });
 

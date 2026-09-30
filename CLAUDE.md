@@ -1,6 +1,6 @@
 # intern-radar
 
-Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new postings against each user's profile with a self-trained, per-user personalized model, and emails matches on a user-chosen schedule. Currently single-user (the owner) behind an allowlist; built so opening it to more users is removing the allowlist, not re-architecting.
+Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new postings against each user's profile with a self-trained, per-user personalized model, and emails matches on a user-chosen schedule. **Open sign-up from day one** — anyone can create an account (it just isn't advertised). `ADMIN_EMAILS` gates admin-only surfaces (`/admin`); everything else is available to any signed-up user.
 
 ## Hard constraints
 
@@ -20,7 +20,7 @@ Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new post
 
 - **App:** Next.js (App Router), TypeScript strict, React, Tailwind — hosted on Vercel Hobby
 - **Backend/DB:** Convex — tables, crons, scheduled functions, HTTP endpoints, file storage, vector search
-- **Auth:** Convex Auth, email sign-in, allowlist-gated (`ALLOWED_EMAILS`)
+- **Auth:** Convex Auth, email OTP sign-in, open sign-up. Abuse protection: Cloudflare Turnstile on the sign-in email request, rate limits per email / per IP / global daily (sign-in emails share Resend's 100/day free cap with digests, so the mail budget is guarded). OTP emails are only sent when a server-side single-use permit exists, so the gated endpoint can't be bypassed via direct `signIn` calls.
 - **Email:** Resend + React Email, sending from a verified subdomain of the owner's domain
 - **ML job:** Python 3.12 on GitHub Actions (nightly cron + `repository_dispatch`), managed with uv
   - JD fetching: httpx against public/internal ATS JSON endpoints; Playwright (cached chromium) only as the iCIMS fallback
@@ -39,7 +39,7 @@ Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new post
 3. **JD text and embeddings arrive asynchronously** from the GitHub Actions job via the import endpoints (JD fetching lives in the Actions job, not Convex — see below). Import mutations re-score affected matches. Listings track `jdStatus` (`pending | fetched | failed | unsupported`), `jdSource`, `jdFetchedAt`, `jdError`.
 4. **Hard filters** (pure TS): drop listings violating any preference set to `hard`. Record which rule dropped it. Class-year and sponsorship conflicts are detected from the title **and JD text** (explicit conflicts only; unstated/unknown passes); degree level uses the structured `degrees` field.
 5. **Score:** build the feature vector for (listing, user), apply the user's current weights → `rawScore`. When there's no JD, the JD-dependent features (resume similarity, preference-vector similarity) are set to neutral, and the final score is `rawScore × NO_JD_PENALTY` (config, default 0.6) — a fixed post-model multiplier, **never a learned weight**. Store both scores **and the feature snapshot** on the match (training needs the features as they were at scoring time).
-6. **Digest** (per-user frequency): top unsent matches above threshold since `lastDigestAt`, plus `wildcards` random below-threshold survivors flagged `exploration: true`. Links go to the matches page. Listings without a JD carry a "Couldn't read job description" label in both the digest and the matches page.
+6. **Digest** (per-user frequency): top unsent matches above threshold since `lastDigestAt`, plus `wildcards` random below-threshold survivors flagged `exploration: true`. Links go to the matches page. Listings without a JD carry a "Couldn't read job description" label in both the digest and the matches page. Sent to any signed-up user who is subscribed; every digest includes an unsubscribe link (signed token, works without signing in) and a link to email settings.
 
 ### GitHub Actions side (Python)
 Nightly, and on `repository_dispatch` when a resume/profile changes:
@@ -78,11 +78,11 @@ When a listing has no JD, the two embedding-similarity features are set to neutr
 - **Thumbs up / down** on any match.
 - **No interaction** → no signal. Never treat it as negative.
 - Exploration items are tagged so training can account for them.
-- Every feedback action from email or the web is authenticated: web via session, email links via HMAC-signed, expiring tokens (`FEEDBACK_SIGNING_SECRET`).
+- Every feedback action from email or the web is authenticated: web via session, email links via HMAC-signed, expiring tokens (`FEEDBACK_SIGNING_SECRET`). Unsubscribe links use the same signing scheme and work without signing in.
 
 ## Cold start and evaluation
 
-- Bootstrap labels: ~200 real listings with Claude-drafted labels (good/bad + one-line reason) against the owner's filled-in profile, drafted from JD text where available and noting per listing whether a JD existed (`hadJd`), **reviewed and corrected by the owner** before import. Labels live in Convex and in gitignored `data/labels/`, never committed.
+- Bootstrap labels: ~200 real listings with Claude-drafted labels (good/bad + one-line reason) against the owner's filled-in profile, drafted from JD text where available and noting per listing whether a JD existed (`hadJd`), **reviewed and corrected by the owner** before import. Labels live in Convex and in gitignored `data/labels/`, never committed. Bootstrap labels are the owner's only — they train the global model; other users personalize from their own feedback via the per-user weights.
 - ~50 labels held out as a fixed eval set, never trained on.
 - Primary metric: **precision@10** (of the top 10 ranked matches, how many are labeled good or applied to). Record it for every model version.
 - Before any training exists, scoring uses strength-derived prior weights + similarity.
@@ -91,7 +91,8 @@ When a listing has no JD, the two embedding-similarity features are set to neutr
 
 - `listings` — sourceId (unique), company, title, category, locations, geo, remoteType, sponsorship, degrees, url, atsType, atsRef, jdStatus, jdSource, jdText, jdFetchedAt, jdError, jdAttempts, datePosted, dateUpdated, active, raw, contentHash, ingestedAt, embedding (vector), embeddingVersion
 - `ingestIndex` — compact sourceId→contentHash chunks so hourly diffs never read full listing docs (keeps DB bandwidth ~12–20% of the free-tier 1 GB/mo; estimates in PLAN.md A5)
-- `profiles` — userId, gradDate, classYear, degreeLevel, preferences[{type, value, strength}], resumeText, resumeEmbedding, preferenceVector, threshold, frequency, wildcards, lastDigestAt
+- `profiles` — userId, gradDate, classYear, degreeLevel, preferences[{type, value, strength}], resumeText, resumeEmbedding, preferenceVector, threshold, frequency, wildcards, subscribed, lastDigestAt
+- `rateLimits` — key (scope:identifier), windowStart, count; `authPermits` — email, expiresAt, consumed (single-use permits that gate OTP email sends)
 - `matches` — userId, listingId, droppedBy (hard rule or null), features, rawScore, score (after NO_JD_PENALTY), modelVersion, exploration, sentAt
 - `feedback` — userId, listingId, kind (applied | thumbs_up | thumbs_down | good_suggestion | bad_suggestion), source (web | email), createdAt
 - `labels` — userId, listingId, label, reason, reviewed, split (train | eval), hadJd
@@ -104,18 +105,23 @@ When a listing has no JD, the two embedding-similarity features are set to neutr
 - Pure logic (normalization, diffing, filters, features, scoring, digest selection) lives in plain TS modules with unit tests; Convex functions are thin wrappers.
 - Feature names and order are defined once and shared (exported to JSON for Python) so TS inference and Python training never drift.
 - Every external call (GitHub, ATS endpoints, Resend) goes through one small client module with timeouts and logged errors.
-- Env vars documented in `.env.example`: `SOURCE_REPO`, `GITHUB_TOKEN` (optional), `RESEND_API_KEY`, `DIGEST_FROM_EMAIL`, `ALLOWED_EMAILS`, `ML_SHARED_SECRET`, `FEEDBACK_SIGNING_SECRET`, `GITHUB_DISPATCH_TOKEN`, `NO_JD_PENALTY` (default 0.6).
+- Env vars documented in `.env.example`: `SOURCE_REPO`, `GITHUB_TOKEN` (optional), `RESEND_API_KEY`, `DIGEST_FROM_EMAIL`, `ADMIN_EMAILS`, `ML_SHARED_SECRET`, `FEEDBACK_SIGNING_SECRET`, `GITHUB_DISPATCH_TOKEN`, `NO_JD_PENALTY` (default 0.6), `APP_URL`, `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (Turnstile is skipped when unset — local dev).
 - Add no dependency without stating why.
 
 ## Gitignored (must stay out of the public repo)
 
 `.env*`, `profile.seed.json`, `private/` (resume), `data/labels/`, any feedback or training exports.
 
+## Onboarding and account lifecycle (Phase 1)
+
+- Onboarding flow for every user (the owner included): resume upload to Convex file storage → text extraction with unpdf → **the PDF is deleted immediately after parsing** (only extracted text is kept) → preference questions with hard/strong/soft/ignore per preference (defaults above) → digest frequency/threshold/wildcards. `profile.seed.json` + `pnpm seed:profile` remain as a dev-only seeding shortcut.
+- "Delete my account and data" removes the profile, matches, feedback, labels, user weights, and auth records.
+- `/privacy` page: what's stored, that resume PDFs are deleted after parsing, and how to delete your account.
+
 ## Roadmap
 
-- **Phase 1 (current):** everything above, single user behind the allowlist
-- **Phase 2:** open sign-up — onboarding flow (resume upload → preference questions with strength settings), unsubscribe, per-user rate limits
-- **Phase 3:** curated Greater Rochester company list as a second source (ATS-supported companies only)
+- **Phase 1 (current):** everything above — open sign-up with onboarding, abuse protection, unsubscribe, deletion
+- **Phase 2:** curated Greater Rochester company list as a second source (ATS-supported companies only)
 
 ## Commands
 

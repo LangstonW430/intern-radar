@@ -1,5 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
-import { isEmailAllowed } from "../lib/allowlist";
+import type { GenericActionCtx } from "convex/server";
+import { internal } from "./_generated/api";
+import type { DataModel } from "./_generated/dataModel";
 import { sendEmail } from "./lib/resendClient";
 
 function generateCode(): string {
@@ -14,11 +16,19 @@ export const ResendOTP = Email({
   async generateVerificationToken() {
     return generateCode();
   },
-  async sendVerificationRequest({ identifier: email, token }) {
-    // First line of defense: never even email a code to someone off the list.
-    if (!isEmailAllowed(email, process.env.ALLOWED_EMAILS)) {
-      throw new Error("This email is not authorized to sign in.");
+  async sendVerificationRequest(
+    { identifier: email, token },
+    // Convex Auth passes the action ctx as a second argument (untyped upstream).
+    ctx?: GenericActionCtx<DataModel>,
+  ) {
+    if (!ctx) {
+      throw new Error("missing action ctx in sendVerificationRequest");
     }
+    // Sends are only allowed with a permit from /auth/request-code, where
+    // Turnstile and the rate limits live. Throws otherwise.
+    await ctx.runMutation(internal.authGuard.consumeSendPermit, {
+      email: email.trim().toLowerCase(),
+    });
     await sendEmail({
       to: email,
       subject: `intern-radar sign-in code: ${token}`,

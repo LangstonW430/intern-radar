@@ -202,6 +202,22 @@ export default defineSchema({
       v.literal("weekly"),
     ),
     wildcards: v.number(),
+    // undefined means subscribed (default-on for existing profiles)
+    subscribed: v.optional(v.boolean()),
     lastDigestAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
+
+  // Fixed-window counters guarding the shared Resend 100/day budget.
+  rateLimits: defineTable({
+    key: v.string(), // "otp:email:<email>" | "otp:ip:<ip>" | "otp:global"
+    windowStart: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
+
+  // Single-use permits created by the gated /auth/request-code endpoint;
+  // the OTP provider refuses to send without one, closing direct-signIn abuse.
+  authPermits: defineTable({
+    email: v.string(),
+    expiresAt: v.number(),
+  }).index("by_email", ["email"]),
 });

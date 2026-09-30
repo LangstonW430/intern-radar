@@ -1,6 +1,8 @@
 "use client";
 
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Header from "@/components/Header";
 import { api } from "@/convex/_generated/api";
@@ -48,12 +50,16 @@ export default function SettingsPage() {
 
 function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
   const save = useMutation(api.profile.updateSettings);
+  const deleteAccount = useMutation(api.profile.deleteMyAccount);
+  const { signOut } = useAuthActions();
+  const router = useRouter();
   const [preferences, setPreferences] = useState<EditablePreference[]>(
     profile.preferences as EditablePreference[],
   );
   const [threshold, setThreshold] = useState(profile.threshold);
   const [frequency, setFrequency] = useState(profile.frequency);
   const [wildcards, setWildcards] = useState(profile.wildcards);
+  const [subscribed, setSubscribed] = useState(profile.subscribed !== false);
   const [status, setStatus] = useState<string | null>(null);
 
   async function handleSave() {
@@ -64,10 +70,25 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
         threshold,
         frequency,
         wildcards,
+        subscribed,
       });
       setStatus("Saved. Matches are being re-scored.");
     } catch (err) {
       setStatus(`Save failed: ${String(err)}`);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      "Delete your account and all data (profile, resume text, matches, feedback)? This cannot be undone.",
+    );
+    if (!confirmed) return;
+    try {
+      await deleteAccount();
+      await signOut();
+      router.push("/");
+    } catch (err) {
+      setStatus(`Deletion failed: ${String(err)}`);
     }
   }
 
@@ -151,6 +172,14 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
             className="w-20 rounded border border-neutral-300 px-2 py-1"
           />
         </label>
+        <label className="flex items-center justify-between text-sm">
+          Receive digest emails
+          <input
+            type="checkbox"
+            checked={subscribed}
+            onChange={(e) => setSubscribed(e.target.checked)}
+          />
+        </label>
       </section>
 
       <button
@@ -160,6 +189,24 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
         Save
       </button>
       {status && <p className="mt-3 text-sm text-neutral-600">{status}</p>}
+
+      <section className="mt-10 rounded border border-red-200 p-4">
+        <h2 className="font-medium text-red-700">Danger zone</h2>
+        <p className="my-2 text-sm text-neutral-600">
+          Permanently delete your account, resume text, matches, feedback, and
+          model weights. See the{" "}
+          <a href="/privacy" className="underline">
+            privacy page
+          </a>{" "}
+          for details.
+        </p>
+        <button
+          onClick={() => void handleDelete()}
+          className="rounded border border-red-600 px-3 py-1.5 text-sm text-red-700"
+        >
+          Delete my account and data
+        </button>
+      </section>
     </>
   );
 }

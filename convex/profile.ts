@@ -85,6 +85,7 @@ export const updateSettings = mutation({
       v.literal("weekly"),
     ),
     wildcards: v.number(),
+    subscribed: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -105,8 +106,76 @@ export const updateSettings = mutation({
       threshold: args.threshold,
       frequency: args.frequency,
       wildcards: args.wildcards,
+      ...(args.subscribed !== undefined ? { subscribed: args.subscribed } : {}),
     });
     await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+  },
+});
+
+/** Deletes the account and all its data: profile, matches, feedback,
+ * labels, user weights, and auth records. Irreversible. */
+export const deleteMyAccount = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not signed in");
+
+    const matches = await ctx.db
+      .query("matches")
+      .withIndex("by_user_listing", (q) => q.eq("userId", userId))
+      .collect();
+    for (const doc of matches) await ctx.db.delete(doc._id);
+
+    const feedback = await ctx.db
+      .query("feedback")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const doc of feedback) await ctx.db.delete(doc._id);
+
+    const labels = await ctx.db
+      .query("labels")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const doc of labels) await ctx.db.delete(doc._id);
+
+    const weights = await ctx.db
+      .query("userWeights")
+      .withIndex("by_user_version", (q) => q.eq("userId", userId))
+      .collect();
+    for (const doc of weights) await ctx.db.delete(doc._id);
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (profile) await ctx.db.delete(profile._id);
+
+    const accounts = await ctx.db
+      .query("authAccounts")
+      .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
+      .collect();
+    for (const account of accounts) {
+      const codes = await ctx.db
+        .query("authVerificationCodes")
+        .withIndex("accountId", (q) => q.eq("accountId", account._id))
+        .collect();
+      for (const code of codes) await ctx.db.delete(code._id);
+      await ctx.db.delete(account._id);
+    }
+    const sessions = await ctx.db
+      .query("authSessions")
+      .withIndex("userId", (q) => q.eq("userId", userId))
+      .collect();
+    for (const session of sessions) {
+      const tokens = await ctx.db
+        .query("authRefreshTokens")
+        .withIndex("sessionId", (q) => q.eq("sessionId", session._id))
+        .collect();
+      for (const token of tokens) await ctx.db.delete(token._id);
+      await ctx.db.delete(session._id);
+    }
+    await ctx.db.delete(userId);
+    return { ok: true };
   },
 });
 
