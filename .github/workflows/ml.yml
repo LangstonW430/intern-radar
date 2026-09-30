@@ -43,6 +43,12 @@ jobs:
       - name: Run tests
         run: uv run pytest
 
+      - name: Fetch pending job descriptions
+        env:
+          CONVEX_SITE_URL: ${{ secrets.CONVEX_SITE_URL }}
+          ML_SHARED_SECRET: ${{ secrets.ML_SHARED_SECRET }}
+        run: uv run python -m intern_radar_ml jd
+
       - name: Embed pending listings and resumes
         env:
           CONVEX_SITE_URL: ${{ secrets.CONVEX_SITE_URL }}
