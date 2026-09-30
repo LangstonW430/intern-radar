@@ -170,6 +170,5 @@ def test_fetch_one_fails_soft_on_exceptions():
     assert "404" in result.error
 
 
-def test_fetch_one_skips_unbuilt_sources():
-    assert fetch_one({"atsType": "icims", "url": "x"}, make_http(lambda r: None)) is None
+def test_fetch_one_skips_unknown_sources():
     assert fetch_one({"atsType": "other", "url": "x"}, make_http(lambda r: None)) is None
