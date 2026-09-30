@@ -2,12 +2,18 @@
 
 import { useEffect, useRef } from "react";
 
+import { TURNSTILE_ACTION } from "@/lib/turnstile";
+
 declare global {
   interface Window {
     turnstile?: {
       render: (
         el: HTMLElement,
-        opts: { sitekey: string; callback: (token: string) => void },
+        opts: {
+          sitekey: string;
+          action: string;
+          callback: (token: string) => void;
+        },
       ) => string;
     };
     __turnstileOnload?: () => void;
@@ -38,6 +44,8 @@ export default function Turnstile({
       rendered = true;
       window.turnstile.render(el, {
         sitekey: siteKey,
+        // Stamped into the token and re-checked server-side in siteverify.
+        action: TURNSTILE_ACTION,
         callback: (token) => callback.current(token),
       });
     };

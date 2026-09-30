@@ -7,6 +7,11 @@ import {
 } from "../lib/schemas/mlPayloads";
 import { z } from "zod";
 import { verifyFeedbackToken } from "../lib/feedbackToken";
+import {
+  evaluateTurnstileVerdict,
+  expectedHostnameFromAppUrl,
+  type SiteverifyResponse,
+} from "../lib/turnstile";
 import { seedProfilePayloadSchema } from "../lib/schemas/profileSeed";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -204,8 +209,14 @@ async function verifyTurnstile(
         body: JSON.stringify({ secret, response: token, remoteip: ip }),
       },
     );
-    const body = (await res.json()) as { success?: boolean };
-    return body.success === true;
+    const body = (await res.json()) as SiteverifyResponse;
+    const verdict = evaluateTurnstileVerdict(body, {
+      expectedHostname: expectedHostnameFromAppUrl(process.env.APP_URL),
+    });
+    if (!verdict.ok) {
+      console.warn("turnstile rejected", verdict.reason);
+    }
+    return verdict.ok;
   } catch (error) {
     console.error("turnstile verify failed", error);
     return false;
