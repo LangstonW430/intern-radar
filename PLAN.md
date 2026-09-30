@@ -1,6 +1,6 @@
 # intern-radar — Phase 1 Plan
 
-Status: **awaiting approval** (PROMPT.md Step 1). No code has been written.
+Status: **approved 2026-09-30** with owner changes folded in (JD fetching moved to the Actions job with expanded source coverage; no-JD penalty; strict incremental exports). Building.
 
 ---
 
@@ -11,7 +11,7 @@ Status: **awaiting approval** (PROMPT.md Step 1). No code has been written.
 - Repo: `SimplifyJobs/Summer2027-Internships`, default branch **`dev`** (not `main`).
 - Structured JSON: **`.github/scripts/listings.json`** (~12.8 MB), raw URL:
   `https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json`
-- It contains **17,021 records spanning every season** (Summer 2026, Fall 2026, Summer 2027, …, plus `"N/A"`). We must filter to `terms` containing `"Summer 2027"`: **3,260 records, 2,105 active+visible** today.
+- It contains **17,021 records spanning every season** (Summer 2026, Fall 2026, Summer 2027, …, plus `"N/A"`). We filter to `terms` containing `"Summer 2027"`: **3,260 records, 2,105 active+visible** today. `"N/A"`-term records are excluded (decision D5).
 - Fields per listing (exactly these 15 keys on every record):
 
   | Field | Type / values |
@@ -28,49 +28,72 @@ Status: **awaiting approval** (PROMPT.md Step 1). No code has been written.
   | `sponsorship` | `"Other"` (**99.4%**), `"Does Not Offer Sponsorship"`, `"U.S. Citizenship is Required"`, `"Offers Sponsorship"` |
   | `degrees` | array: `Bachelor's`, `Master's`, `PhD`, `MBA`, `Associate's`, … (sometimes empty) |
 
-- **There is no class-year field.** Only `degrees` and `terms`. See open question Q1.
+- **There is no class-year field.** Only `degrees` and `terms`. See decision D1.
 
 ### A2. ATS distribution (Summer 2027, active+visible, n=2,105)
 
-| ATS | Count | Share |
-|---|---|---|
-| Workday | 810 | 38.5% |
-| Greenhouse | 332 | 15.8% (216 direct `job-boards.greenhouse.io` + 116 embedded `?gh_jid=` on company sites) |
-| other/unknown | 308 | 14.6% |
-| iCIMS | 249 | 11.8% |
-| Oracle Cloud | 202 | 9.6% |
-| Ashby | 78 | 3.7% |
-| SmartRecruiters | 37 | 1.8% |
-| SuccessFactors | 35 | 1.7% |
-| Lever | 25 | 1.2% |
-| Rippling / Workable / Jobvite | 29 | 1.4% |
+| ATS | Count | Share | JD fetch path (Phase 1) |
+|---|---|---|---|
+| Workday | 810 | 38.5% | internal CXS JSON endpoint (probe first) |
+| Greenhouse | 332 | 15.8% | boards API — 216 direct + 116 embedded `?gh_jid=` (token resolved from page HTML) |
+| other/unknown | 308 | 14.6% | unsupported |
+| iCIMS | 249 | 11.8% | plain HTTP, Playwright fallback (probe first) |
+| Oracle Cloud | 202 | 9.6% | candidate-experience JSON endpoint (probe first) |
+| Ashby | 78 | 3.7% | posting API |
+| SmartRecruiters | 37 | 1.8% | unsupported (Phase 1) |
+| SuccessFactors | 35 | 1.7% | unsupported (Phase 1) |
+| Lever | 25 | 1.2% | postings API |
+| Rippling / Workable / Jobvite | 29 | 1.4% | unsupported (Phase 1) |
 
-→ Direct Greenhouse + Lever + Ashby = **319 listings (15.2%)** get full JDs; **20.7%** if we also resolve embedded `gh_jid` boards (Q4). The other ~80% score on metadata embeddings only — `has_jd` feature matters.
+→ Verified endpoints (GH/Lever/Ashby) cover 20.7% incl. embedded Greenhouse; adding Workday + Oracle + iCIMS lifts potential coverage to **~82%**, subject to per-source probes (B8): test ~20 real listings per source before building; **if a source succeeds on <50%, stop and report instead of building it.**
 
 Public endpoints, verified against live Summer 2027 listings:
 
-- **Greenhouse** `GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}` → `content` (HTML-**escaped** — must entity-decode then strip tags), `title`, `location.name`, `education`, `departments`, `offices`, `updated_at`. Board token + job id parse straight out of `job-boards.greenhouse.io/{token}/jobs/{id}` URLs.
+- **Greenhouse** `GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}` → `content` (HTML-**escaped** — must entity-decode then strip tags), `title`, `location.name`, `education`, `departments`, `offices`, `updated_at`. Board token + job id parse straight out of `job-boards.greenhouse.io/{token}/jobs/{id}` URLs. Embedded boards (`?gh_jid={id}` on company pages): fetch the page once, extract the board token from the static Greenhouse embed script, then use the same API.
 - **Lever** `GET https://api.lever.co/v0/postings/{company}/{posting_id}` → `descriptionPlain`, `lists[]` (`{text, content}` HTML), `additionalPlain`, `text` (title), `categories{commitment, location, allLocations, team}`, `workplaceType`, `country`. Parses from `jobs.lever.co/{company}/{uuid}`.
 - **Ashby** `GET https://api.ashbyhq.com/posting-api/job-board/{org}` → **all** of that org's jobs in one call: `id`, `title`, `descriptionHtml`, `descriptionPlain`, `location`, `secondaryLocations`, `isRemote`, `isListed`, `workplaceType`, `employmentType`. Org + job id parse from `jobs.ashbyhq.com/{org}/{uuid}`; batch per-org, then match by id.
+- **Workday** (to probe): career pages call `GET https://{tenant}.wd{n}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/job/{externalPath}` returning `jobPostingInfo.jobDescription` (HTML). Tenant/site/path parse from the listing URL. No headless browser.
+- **Oracle ORC** (to probe): candidate-experience REST under `https://{host}/hcmRestApi/scaas/recruiting/publicCandidateExperience/...` returning requisition details incl. description. Requisition id/site parse from the listing URL.
+- **iCIMS** (to probe): `https://careers-*.icims.com/jobs/{id}/...` pages often render the JD server-side; plain HTTP first, Playwright fallback only where needed.
 
 ### A3. Free-tier check vs CLAUDE.md
 
 | Service | Limits (2026) | Verdict |
 |---|---|---|
-| Convex free (Starter) | 1M function calls/mo, 0.5 GB DB, 1 GB file storage, 1 GB DB bandwidth/mo, 1 GB egress/mo, 20 GB-hr action compute, crons + vector search included | **OK.** ~3.3k listings × 384-dim vectors ≈ 10 MB. Hourly cron ≈ 720 runs/mo. Mitigation: check the repo's head commit SHA via the GitHub commits API (tiny) and only download the 12.8 MB JSON on change; ML export/import payloads are a few MB nightly. |
-| Vercel Hobby | 1M function invocations/mo, 100 GB transfer, 60 s function timeout, cron ≤ 1/day, **non-commercial personal use only** | **OK** — all crons live in Convex, so the 1/day Vercel cron cap is irrelevant. Non-commercial clause fine for a personal tool; revisit only if Phase 2+ ever monetizes. |
-| Resend free | 3,000/mo **and 100/day**, up to 3 domains, requires verified domain | **OK** for single user (≤ a few digests/day). Fine through early Phase 2. |
-| GitHub Actions | Free **unlimited** minutes on public repos; 10 GB cache/repo; scheduled workflows auto-disabled after 60 days without repo activity | **OK.** bge-small (~130 MB) + uv cache fit easily in 10 GB. Keepalive step required (already in CLAUDE.md; the workflow will re-enable itself via API + a dummy-commit fallback). |
+| Convex free (Starter) | 1M function calls/mo, 0.5 GB DB storage, **1 GB database I/O (bandwidth)/mo**, 1 GB egress/mo, 1 GB file storage, 20 GB-hr action compute, crons + vector search included | **OK** — see bandwidth budget in A5. |
+| Vercel Hobby | 1M function invocations/mo, 100 GB transfer, 60 s function timeout, cron ≤ 1/day, non-commercial personal use only | **OK** — all crons live in Convex. |
+| Resend free | 3,000/mo **and 100/day**, up to 3 domains, requires verified domain | **OK** for single user. |
+| GitHub Actions | Free **unlimited** minutes on public repos; 10 GB cache/repo; scheduled workflows auto-disabled after 60 days without repo activity | **OK.** bge-small (~130 MB) + uv + Playwright browser (~300 MB) fit in 10 GB cache. Keepalive step required. |
 
-Nothing in CLAUDE.md breaks a free tier.
+### A4. Decisions (owner-approved 2026-09-30)
 
-### A4. Data-reality mismatches → open questions
+- **D1 — class year.** No structured field. The default-`hard` class-year filter only drops a listing when its **title or JD text** explicitly names a conflicting class year ("juniors only", "Class of 2028", "penultimate year"); unstated passes. `class_year_signal` feature (when not hard): 1 explicit fit / 0.5 unstated / 0 explicit mismatch. Degree-level filtering uses the structured `degrees` array (empty = pass).
+- **D2 — role categories.** Profile enum mirrors the source: `ai_ml_data | swe | hardware | product | quant`; legacy source aliases normalized in.
+- **D3 — sponsorship.** A `hard` sponsorship preference only drops **explicit** conflicts — from the structured field (`Does Not Offer Sponsorship` / `U.S. Citizenship is Required` when sponsorship is needed) **or from JD text** ("does not offer sponsorship", "US citizenship required", etc.). Unknown passes. Feature: 1 explicit match / 0.5 unknown / 0 explicit conflict.
+- **D4 — embedded Greenhouse.** In scope for Phase 1 (page fetch → board token → boards API).
+- **D5 — term filter.** `terms ∋ "Summer 2027"` exactly; `["N/A"]` excluded.
+- **D6 — JD fetching lives in the GitHub Actions job**, not Convex (owner Change 1). Sources and rules in B8. The old "never scrape Workday" rule is removed.
+- **D7 — no-JD handling** (owner Change 2): JD-dependent features go neutral without a JD; final score is multiplied by `NO_JD_PENALTY` (config, default **0.6**) **after** the model — never a learned weight; UI + digest show "Couldn't read job description".
+- **D8 — bandwidth** (owner Change 3): exports strictly incremental, imports batched ≤ 100 records/call; budget below.
 
-- **Q1 — class year.** No class-year field exists. Proposal: the default-`hard` class-year filter only drops a listing when its title/JD text explicitly names a conflicting class ("juniors only", "Class of 2028", "penultimate year" vs. your year); everything else passes. The `class_year_signal` feature (when not hard) is 1 = explicit fit / 0.5 = unstated / 0 = explicit mismatch. Degree-level filtering uses the structured `degrees` array (empty array = pass).
-- **Q2 — role categories.** The source has `AI/ML/Data` (merged), `Software`, `Hardware`, `Product`, `Quant` — no `research`, no ai_ml/data split. Proposal: change the profile enum to mirror the source: `ai_ml_data | swe | hardware | product | quant`, with legacy aliases normalized in. (Alternative: keep the CLAUDE.md enum and map `AI/ML/Data` → matches either `ai_ml` or `data`; `research` would match nothing.)
-- **Q3 — sponsorship.** 99.4% of listings say `"Other"` (unknown). Proposal: a `hard` sponsorship preference only drops **explicit** conflicts (`Does Not Offer Sponsorship` / `U.S. Citizenship is Required` when you need sponsorship); `"Other"` always passes. Feature encoding: 1 = explicit match, 0.5 = unknown, 0 = explicit conflict. Expect low model signal.
-- **Q4 — embedded Greenhouse boards.** 116 listings hide the board token behind `?gh_jid=` on company career pages. Resolvable by fetching the page once and extracting the token from the static embed script — but that's a fourth fetch path with more failure modes. Proposal: **defer**; treat as metadata-only in Phase 1.
-- **Q5 — term filter.** Ingest only listings whose `terms` include `"Summer 2027"` exactly (multi-term listings included). 1,655 records have `terms: ["N/A"]` — excluded. Confirm.
+### A5. Convex database-bandwidth budget (cap: 1 GB/month)
+
+Design choices that keep reads cheap: the hourly ingest checks the repo head SHA via the GitHub API (no DB reads beyond the ~1 KB `ingestState` doc) and only diffs when the JSON actually changed; diffs read a **compact ingest index** (sourceId → content hash, ~200 KB across a few docs) instead of the full listing set; ML exports are incremental (only listings missing JD/embedding + feedback/labels since last run).
+
+| Component | Backfill month | Steady state |
+|---|---|---|
+| Ingest: SHA checks (720/mo × ~2 KB state r/w) | 1.5 MB | 1.5 MB |
+| Ingest: diffs (~240 changed downloads/mo × ~200 KB index read) | 48 MB | 48 MB |
+| Ingest: listing writes (3.3k initial / ~45 new+updated per day) | 10 MB | 4 MB |
+| JD writeback (~1.7k × 5 KB backfill / ~15/day steady) | 17 MB | 5 MB |
+| Embedding writeback (3.3k × ~3 KB, some twice after JD arrives / ~15 day) | 17 MB | 3 MB |
+| ML export reads (incremental) | 10 MB | 5 MB |
+| Scoring + re-scores (reads listing+profile, writes match ~1.5 KB; ~4 full re-scores/mo) | 80 MB | 45 MB |
+| Digest queries + web app (single user) | 15 MB | 15 MB |
+| Label bootstrap (one-time) | 3 MB | — |
+| **Total** | **≈ 200 MB (20%)** | **≈ 125 MB (12%)** |
+
+Both are well under the 50% flag threshold. Egress (1 GB/mo cap): the backfill ML export is ~2–10 MB total, nightly incrementals are KBs — negligible.
 
 ---
 
@@ -92,22 +115,21 @@ intern-radar/
 │  ├─ auth.config.ts / auth.ts
 │  ├─ crons.ts               # hourly ingest, per-frequency digests
 │  ├─ http.ts                # /ml/export, /ml/import/*, /feedback/redeem
-│  ├─ ingest.ts  jd.ts  scoring.ts  digest.ts
+│  ├─ ingest.ts  scoring.ts  digest.ts
 │  ├─ profile.ts  feedbackFns.ts  labels.ts  models.ts
 │  └─ lib/                   # convex-side helpers (env, clients)
 ├─ lib/                      # PURE logic — all unit-tested, no Convex imports
-│  ├─ schemas/               # zod: simplify.ts, greenhouse.ts, lever.ts, ashby.ts
-│  ├─ atsDetect.ts           # url → {ats, ids} parser
+│  ├─ schemas/               # zod: simplify.ts, mlPayloads.ts
+│  ├─ atsDetect.ts           # url → {ats, ids} parser (shared contract w/ Python via fixtures)
 │  ├─ normalize.ts           # category/sponsorship/degrees/location-string normalization
 │  ├─ geo/                   # lookup loader + haversine + alias table
 │  ├─ diff.ts  filters.ts  features.ts  score.ts  digestSelect.ts
-│  ├─ classYear.ts           # class-year extraction from title/JD text
-│  ├─ html.ts                # entity-decode + tag-strip for JD HTML
+│  ├─ textSignals.ts         # class-year + sponsorship-conflict extraction from title/JD text
 │  └─ feedbackToken.ts       # HMAC sign/verify, expiry
 ├─ shared/features.json      # single source of truth for the feature vector (B5)
 ├─ scripts/
 │  ├─ build-geonames.ts      # GeoNames cities dump → data/geonames/lookup.json
-│  ├─ export-label-draft.ts  # step 10 CSV
+│  ├─ export-label-draft.ts  # step 10 CSV (includes hadJd column)
 │  └─ import-labels.ts       # reviewed CSV → Convex, fixed 50-label eval split
 ├─ data/
 │  ├─ geonames/              # committed compact lookup (CC-BY, attributed in README)
@@ -115,58 +137,66 @@ intern-radar/
 ├─ ml/                       # Python 3.12, uv
 │  ├─ pyproject.toml
 │  ├─ src/intern_radar_ml/
-│  │  ├─ client.py           # Convex export/import HTTP client (shared secret)
+│  │  ├─ client.py           # Convex export/import HTTP client (shared secret, batches ≤100)
+│  │  ├─ jd/                 # JD fetchers (owner Change 1)
+│  │  │  ├─ base.py          # rate limiter (1 req/2 s/host), UA, backoff, HTML→text cleaner
+│  │  │  ├─ greenhouse.py    # direct + embedded gh_jid token resolution
+│  │  │  ├─ lever.py  ashby.py
+│  │  │  ├─ workday.py       # CXS JSON
+│  │  │  ├─ oracle.py        # candidate-experience JSON
+│  │  │  └─ icims.py         # plain HTTP + Playwright fallback
 │  │  ├─ embed.py            # bge-small via sentence-transformers
 │  │  ├─ features.py         # loads shared/features.json, asserts names/order
 │  │  ├─ train.py            # global LR + per-user L2-toward-global
 │  │  └─ evaluate.py         # precision@10 on eval split
 │  └─ tests/
 ├─ .github/workflows/ml.yml  # nightly cron + repository_dispatch + keepalive
-├─ .githooks/commit-msg      # already exists at repo root — moves here
+├─ .githooks/commit-msg
 ├─ private/                  # GITIGNORED (resume.pdf)
 └─ profile.seed.json         # GITIGNORED (example stays committed)
 ```
 
 ### B2. Convex schema (tables → key fields → indexes)
 
-- `listings` — `sourceId` (Simplify UUID), `company`, `title`, `category` (normalized), `categoryRaw`, `locations[]`, `geo[] {lat, lon, name}`, `remoteType` (`onsite|remote|hybrid|unknown`), `sponsorship` (normalized enum), `degrees[]`, `url`, `atsType` (`greenhouse|lever|ashby|workday|icims|oracle|other`), `atsRef` (parsed board/company/job ids), `jdText?`, `jdFetchedAt?`, `jdError?`, `datePosted`, `dateUpdated`, `active`, `raw` (original record), `ingestedAt`, `embedding?` (v.array(float64), 384-dim), `embeddingVersion?`
-  - indexes: `by_sourceId`, `by_active`; vectorIndex `by_embedding` (dim 384)
+- `listings` — `sourceId` (Simplify UUID), `company`, `title`, `category` (normalized, D2), `categoryRaw`, `locations[]`, `geo[] {lat, lon, name}`, `remoteType` (`onsite|remote|hybrid|unknown`), `sponsorship` (normalized enum), `degrees[]`, `url`, `atsType` (`greenhouse|greenhouse_embedded|lever|ashby|workday|icims|oracle|other`), `atsRef` (parsed board/company/job ids), **`jdStatus` (`pending|fetched|failed|unsupported`), `jdSource?`, `jdText?`, `jdFetchedAt?`, `jdError?`, `jdAttempts`**, `datePosted`, `dateUpdated`, `active`, `raw` (original record), `contentHash` (for cheap diffing), `ingestedAt`, `embedding?` (384-dim), `embeddingVersion?` (hash of embedded text)
+  - indexes: `by_sourceId`, `by_active`, `by_jdStatus`, `by_needsEmbedding`; vectorIndex `by_embedding` (dim 384)
+- `ingestIndex` — compact docs: `{ chunk, entries: [{sourceId, contentHash}] }` so hourly diffs never read full listings (A5)
 - `profiles` — `userId`, `email`, `gradDate`, `classYear`, `degreeLevel`, `preferences[] {type, value, strength}`, `resumeText?`, `resumeEmbedding?`, `preferenceVector?`, `threshold`, `frequency` (`instant|daily|weekly`), `wildcards`, `lastDigestAt?` — index `by_userId`
-- `matches` — `userId`, `listingId`, `droppedBy?` (rule name or null), `features` (name→value snapshot **at scoring time**), `score`, `modelVersion`, `exploration`, `sentAt?`, `createdAt` — indexes `by_user_listing`, `by_user_score`, `by_user_unsent`
-- `feedback` — `userId`, `listingId`, `kind` (`applied|thumbs_up|thumbs_down|good_suggestion|bad_suggestion`), `source` (`web|email`), `createdAt` — indexes `by_user_listing`, `by_user`
-- `labels` — `userId`, `listingId`, `label` (`good|bad`), `reason`, `reviewed`, `split` (`train|eval`) — index `by_user`, `by_split`
-- `models` — `version`, `globalWeights[]`, `featureNames[]`, `metrics {precisionAt10, n_train, n_eval, ...}`, `promoted`, `createdAt`; `userWeights` — `userId`, `modelVersion`, `weights[]`
-- `ingestState` — singleton: `lastCommitSha`, `lastRunAt`, `lastError?`, `lastNewCount`
-- Convex Auth tables (from @convex-dev/auth)
+- `matches` — `userId`, `listingId`, `droppedBy?`, `features` (snapshot at scoring time), `rawScore` (model output), `score` (after NO_JD_PENALTY), `modelVersion`, `exploration`, `sentAt?`, `createdAt` — indexes `by_user_listing`, `by_user_score`, `by_user_unsent`
+- `feedback` — `userId`, `listingId`, `kind` (`applied|thumbs_up|thumbs_down|good_suggestion|bad_suggestion`), `source` (`web|email`), `createdAt` — indexes `by_user_listing`, `by_user`, `by_createdAt` (incremental export)
+- `labels` — `userId`, `listingId`, `label` (`good|bad`), `reason`, `reviewed`, `split` (`train|eval`), `hadJd` — indexes `by_user`, `by_split`
+- `models` — `version`, `globalWeights[]`, `featureNames[]`, `metrics {precisionAt10, nTrain, nEval, …}`, `promoted`, `createdAt`; `userWeights` — `userId`, `modelVersion`, `weights[]`
+- `ingestState` — singleton: `lastCommitSha`, `lastRunAt`, `lastError?`, `lastNewCount`; also `mlSyncState`: `lastExportAt` cursors per kind
+- Convex Auth tables
 
 ### B3. zod schemas (all external data crosses one of these)
 
-- `SimplifyListing` — the 15 fields in A1; unknown `category`/`sponsorship` values fall back to catch-all enums + raw preserved; records failing parse are skipped and counted in the ingest log.
-- `GreenhouseJob` — `{ id, title, content, location {name}, updated_at, departments?, offices?, education? }`
-- `LeverPosting` — `{ id, text, descriptionPlain, lists [{text, content}], additionalPlain?, categories {commitment?, location?, allLocations?}, workplaceType?, country? }`
-- `AshbyBoard` — `{ jobs: [{ id, title, descriptionHtml, descriptionPlain?, location, secondaryLocations?, isRemote, isListed, workplaceType?, employmentType? }] }`
-- `ProfileSeed` — mirrors `profile.seed.example.json`.
-- ML import payloads — embeddings batch, model push (weights length must equal `featureNames` length must equal `shared/features.json`).
+- `SimplifyListing` — the 15 fields in A1; unknown `category`/`sponsorship` values fall back to catch-all + raw preserved; records failing parse are skipped and counted.
+- `ProfileSeed` — mirrors `profile.seed.example.json` (roleCategory enum per D2).
+- ML import payloads — JD batch (`[{listingId, jdStatus, jdSource?, jdText?, jdError?}]`), embeddings batch, model push (weights length must equal `featureNames` length must equal `shared/features.json`). Batches capped at 100 records.
+- ATS response shapes live in Python (pydantic-light dataclasses + tests with recorded fixtures) since fetching moved to the Actions job; Convex only ever receives cleaned text through the JD batch schema.
 
 ### B4. Feature vector (initial, order = vector order)
 
 | # | Name | Computation | Prior weight |
 |---|---|---|---|
 | 0 | `bias` | constant 1 | fitted; prior ≈ −1 |
-| 1 | `embed_sim_resume` | cosine(listing embedding, resume embedding), 0 if missing | 2.0 |
-| 2 | `embed_sim_pref` | cosine(listing embedding, preference vector) — pref vector = resume embedding Rocchio-updated (+liked/applied, −disliked, α=1, β=0.5, γ=0.3, re-normalized) | 1.5 |
+| 1 | `embed_sim_resume` | cosine(listing embedding, resume embedding); **neutral (0.5·expected-sim) when no JD** — a title-only embedding must not push either way (D7); 0 if resume missing | 2.0 |
+| 2 | `embed_sim_pref` | cosine(listing embedding, preference vector — Rocchio: resume embedding +liked/applied −disliked, α=1, β=0.5, γ=0.3, re-normalized); **neutral when no JD** | 1.5 |
 | 3 | `loc_proximity` | max over preferred places of `exp(−haversine_miles / max(radius, 50))`; 1.0 if listing remote & remote acceptable; 0 if no geo | by strength |
 | 4 | `work_mode_match` | 1 if listing remoteType ∈ preferred modes, 0.5 if unknown, else 0 | by strength |
 | 5 | `role_category_match` | 1 if normalized category ∈ preferred categories else 0 | by strength |
-| 6 | `sponsorship_match` | 1 explicit match / 0.5 unknown (`Other`) / 0 explicit conflict | by strength |
-| 7 | `class_year_signal` | 1 explicit fit / 0.5 unstated / 0 explicit mismatch (from title+JD text; only scored when strength ≠ hard) | by strength |
+| 6 | `sponsorship_match` | 1 explicit match / 0.5 unknown / 0 explicit conflict (structured field or JD text, D3) | by strength |
+| 7 | `class_year_signal` | 1 explicit fit / 0.5 unstated / 0 explicit mismatch (title + JD text; only scored when strength ≠ hard) | by strength |
 | 8 | `company_affinity` | 1 if user has applied/thumbs-upped this company before, 0 otherwise | 0.5 |
 | 9 | `recency` | `exp(−days_since_posted / 14)` | 0.5 |
 | 10 | `has_jd` | 1 if full JD text stored | 0.25 |
 
-Strength→prior: `strong` = 1.0, `soft` = 0.4, `ignore` = 0 (feature emitted but zero-weighted so vector shape never changes). `hard` prefs never reach scoring (filtered first). Training clamps strength-feature weights to `[0, 2×prior]`-style bounds from `shared/features.json` so feedback tunes but can't invert a stated preference.
+"Neutral" for the embedding features = the feature's population mean over JD-bearing listings (computed at training time, stored with the model; 0.5 × typical similarity as the pre-model fallback) so the model can't learn to reward JD-less listings through these slots.
 
-Score = `sigmoid(w · x)` in plain TS inside Convex; snapshot of `x` stored on the match.
+Strength→prior: `strong` = 1.0, `soft` = 0.4, `ignore` = 0 (feature emitted but zero-weighted so vector shape never changes). `hard` prefs never reach scoring. Training clamps strength-feature weights to bounds from `shared/features.json` so feedback tunes but can't invert a stated preference.
+
+**Score** = `rawScore = sigmoid(w · x)`; **final `score = rawScore × NO_JD_PENALTY` when `jdStatus ≠ fetched`** (config env `NO_JD_PENALTY`, default 0.6, applied post-model, never learned — D7). Both stored on the match with the feature snapshot.
 
 ### B5. Shared feature definition — `shared/features.json`
 
@@ -175,53 +205,62 @@ Score = `sigmoid(w · x)` in plain TS inside Convex; snapshot of `x` stored on t
   "embeddingModel": "BAAI/bge-small-en-v1.5", "embeddingDim": 384,
   "features": [
     { "name": "bias", "prior": -1.0, "bounds": [-6, 6] },
-    { "name": "embed_sim_resume", "prior": 2.0, "bounds": [0, 6] },
+    { "name": "embed_sim_resume", "prior": 2.0, "bounds": [0, 6], "neutralWithoutJd": true },
     { "name": "loc_proximity", "priorByStrength": {"strong": 1.0, "soft": 0.4}, "bounds": [0, 3] }
   ]
 }
 ```
-(abridged — one entry per B4 row). TS: imported directly, validated by zod at startup; `lib/features.ts` builds vectors in array order. Python: `ml/features.py` loads the same file and **fails the run** if names/order/dim disagree with what Convex exports. The model push includes `featureNames` and Convex re-verifies before accepting. One file, no drift.
+(abridged — one entry per B4 row). TS imports it (zod-validated at startup); `lib/features.ts` builds vectors in array order. Python `ml/features.py` loads the same file and **fails the run** if names/order/dim disagree with what Convex exports. Model pushes include `featureNames`; Convex re-verifies before accepting. One file, no drift.
 
-### B6. Convex ⇄ Actions endpoints (all `Authorization: Bearer ML_SHARED_SECRET`, all on Convex `http.ts`)
+### B6. Convex ⇄ Actions endpoints (all `Authorization: Bearer ML_SHARED_SECRET`, on Convex `http.ts`)
 
-- `GET /ml/export?cursor=&kind=listings|profiles|labels|feedback` — paginated JSON:
-  - `listings`: id, title, company, category, jdText (or null) for all active Summer-2027 listings + `needsEmbedding` flag
-  - `profiles`: userId, resumeText, current preference list (for Rocchio in TS? no — Rocchio stays in TS; profile export is for resume embedding only)
-  - `labels`: listingId, label, split; `feedback`: listingId, kind, createdAt (train uses both; eval split rows are never trained on)
-  - plus `model`: current promoted version + metrics
-- `POST /ml/import/embeddings` — `{ items: [{listingId, embedding}], resumes: [{userId, embedding}] }`, batched ≤ 100/call
-- `POST /ml/import/model` — `{ version, featureNames, globalWeights, userWeights: [{userId, weights}], metrics }`; Convex promotes only if `metrics.precisionAt10 >=` current promoted version's, else stores unpromoted + logs
-- `POST /feedback/redeem` — HMAC-signed email-link token → records feedback (separate secret, `FEEDBACK_SIGNING_SECRET`, 14-day expiry, single-use per (token, kind))
+**Strictly incremental — never full-table exports (D8).**
+
+- `GET /ml/export?kind=jd_pending` — listings with `jdStatus = pending` and `jdAttempts < cap`: id, url, atsType, atsRef. Paginated (cursor), ≤ 200/page.
+- `GET /ml/export?kind=embed_pending` — listings where `embeddingVersion` ≠ hash(current text): id, title, company, category, jdText. Paginated.
+- `GET /ml/export?kind=training&since={ts}` — labels/feedback created since cursor + match feature snapshots for them + resumeText if changed + current promoted model metrics. Cursor persisted in `mlSyncState`.
+- `POST /ml/import/jd` — `{ items: [{listingId, jdStatus, jdSource?, jdText?, jdError?}] }`, ≤ 100/call. Cleaned text only — raw HTML never crosses the wire.
+- `POST /ml/import/embeddings` — `{ items: [{listingId, embedding, embeddingVersion}], resumes: [{userId, embedding}] }`, ≤ 100/call.
+- `POST /ml/import/model` — `{ version, featureNames, globalWeights, userWeights, metrics }`; Convex promotes only if `metrics.precisionAt10 >=` current promoted version's.
+- `POST /feedback/redeem` — HMAC-signed email-link token (`FEEDBACK_SIGNING_SECRET`, 14-day expiry, single-use per (token, kind)).
 
 Trigger path: profile/resume change in Convex → action calls GitHub `repository_dispatch` (`GITHUB_DISPATCH_TOKEN`) → same workflow as nightly.
 
 ### B7. Pipeline flow (Convex)
 
-1. **Ingest (hourly cron):** GitHub commits API for head SHA of `dev` touching `.github/scripts/listings.json` → if same as `ingestState.lastCommitSha`, stop (no 12.8 MB download). Else fetch raw JSON, zod-parse per record (skip+count malformed), filter `terms ∋ "Summer 2027"` and `is_visible`, diff by `sourceId` (insert new, update `active`/`dateUpdated` on existing), batched mutations.
-2. **Post-ingest (scheduled per new listing):** ATS detect → JD fetch (Greenhouse/Lever/Ashby only; Ashby batched per org) → clean text → store; geocode locations via committed lookup; set remoteType from location strings + ATS `workplaceType`/`isRemote`.
-3. **Score (per new/updated listing × user):** hard filters (`{pass, droppedBy}`) → feature vector → sigmoid with user's current weights (or priors if no model) → store match + snapshot. Re-score all on model promotion or preference change.
-4. **Digest (cron per frequency):** unsent matches above threshold since `lastDigestAt`, top-N + `wildcards` random below-threshold survivors (`exploration: true`), React Email via Resend, mark `sentAt`. `instant` = checked hourly after ingest.
+1. **Ingest (hourly cron):** GitHub commits API for head SHA of `dev` → if unchanged vs `ingestState.lastCommitSha`, stop (no 12.8 MB download). Else fetch raw JSON, zod-parse per record (skip+count malformed), filter `terms ∋ "Summer 2027"` and `is_visible`, diff against `ingestIndex` content hashes (insert new with `jdStatus: pending|unsupported` by ATS; update changed; a changed record resets `jdStatus` to `pending` so the JD is re-fetched — the only re-fetch trigger), batched mutations.
+2. **Geocode + normalize (post-ingest, in Convex):** offline lookup, remoteType from location strings.
+3. **JD + embeddings: arrive asynchronously from the Actions job** (B8) via the import endpoints. Import mutations re-score affected matches.
+4. **Score (per new/updated listing × user):** hard filters (`{pass, droppedBy}`) → features → sigmoid → NO_JD_PENALTY when applicable → store match + snapshot. Re-score on model promotion, preference change, or JD/embedding arrival.
+5. **Digest (cron per frequency):** unsent matches above threshold since `lastDigestAt`, top-N + `wildcards` random below-threshold survivors (`exploration: true`), React Email via Resend; JD-less listings carry the "Couldn't read job description" label; mark `sentAt`.
 
-### B8. ML job (nightly + dispatch)
+### B8. ML job (nightly + dispatch) — now owns JD fetching
 
-1. Pull exports (B6). 2. Embed listings missing embeddings + any changed resume with bge-small (`sentence-transformers`, HF cache in Actions cache). JD text if present else `title + company + category`. 3. Push embeddings back. 4. Build training set: labels (train split) + feedback (applied/thumbs_up/good → 1, thumbs_down/bad → 0; exploration-sourced rows kept but flagged, weight 1.0 — revisit later), features recomputed from stored match snapshots exported with feedback. 5. Train global LR (scikit-learn, class-balanced), then per-user: LR with L2 penalty toward global weights (`w_user = argmin logloss + λ‖w − w_global‖²`), λ tuned by label count. Clamp to bounds. 6. Evaluate precision@10 on eval split. 7. Push model (B6); Convex decides promotion. 8. Keepalive step (re-enables workflow via GitHub API).
+1. Pull `jd_pending` export. **Fetch JDs**, source priority: Greenhouse (incl. embedded) / Lever / Ashby → Workday CXS → Oracle ORC → iCIMS (HTTP, Playwright fallback). Rules (owner Change 1): per-host rate limit ~1 req/2 s, honest User-Agent, exponential backoff on errors/429; fetch each JD once (re-fetch only when the listing record changed; retry cap via `jdAttempts`); clean to text (entity-decode, tag-strip, whitespace-normalize) — never store/ship raw HTML; every outcome reported as `jdStatus` + `jdSource`/`jdError`; **fail soft** — one bad host never breaks the run. Push back in ≤100-record batches.
+   - **Probe gate:** before building each of Workday / Oracle / iCIMS, run the prototype against ~20 real listings and report the success rate; **<50% → stop and tell the owner** instead of building it.
+2. Pull `embed_pending`. Embed with bge-small (HF cache in Actions cache); JD text if present else `title + company + category`; `embeddingVersion` = hash of embedded text so JD arrival triggers exactly one re-embed. Push back in batches.
+3. Pull `training` increment. Train global LR (scikit-learn, class-balanced) on labels + feedback (applied/thumbs_up/good → 1, thumbs_down/bad → 0; exploration rows flagged), then per-user LR with L2 toward global (λ scaled by label count), clamp to bounds.
+4. Evaluate precision@10 on the eval split; push model; Convex decides promotion.
+5. Keepalive step (re-enables the workflow via GitHub API).
+
+Caches: uv env, HF model (~130 MB), Playwright chromium (~300 MB) — all in Actions cache (10 GB cap, fine).
 
 ### B9. Build order (each step: typecheck + lint + tests green → conventional commit)
 
-| # | Step (matches PROMPT.md) | Commit |
+| # | Step | Commit(s) |
 |---|---|---|
-| 1 | Scaffold: pnpm + Next.js (App Router, strict TS, Tailwind) + Convex + Vitest; `ml/` uv + pytest; `.env.example`, `.gitignore`, `.githooks` + `core.hooksPath`; README w/ GeoNames attribution | `chore: scaffold app, convex, and ml workspaces` |
+| 1 | Scaffold: pnpm + Next.js (App Router, strict TS, Tailwind) + Convex + Vitest; `ml/` uv + pytest; `.env.example`; README | `chore: scaffold app, convex, and ml workspaces` |
 | 2 | Convex Auth email sign-in + `ALLOWED_EMAILS` gate | `feat: allowlisted email auth` |
 | 3 | Profile schema, seed-loader mutation, unpdf resume extraction | `feat: profile seed and resume ingestion` |
-| 4 | Ingest: GitHub client, zod, SHA short-circuit, diff, hourly cron + fixture tests from real JSON | `feat: hourly simplify ingest` |
-| 5 | JD fetch: 3 ATS clients + HTML cleanup + recorded-fixture tests | `feat: greenhouse/lever/ashby jd fetch` |
-| 6 | GeoNames preprocess script + committed lookup + location normalizer (aliases: NYC, SF, Remote in …) + tests | `feat: offline geocoding` |
-| 7 | Hard filters, one test per preference type × strength | `feat: hard filters` |
-| 8 | ML part 1: export endpoint, embed+push job, `ml.yml` (cron + dispatch + keepalive + caches) | `feat: nightly embedding job` |
-| 9 | Scoring: `shared/features.json`, features, priors, sigmoid, snapshot, Rocchio | `feat: prior-weight scoring` |
-| 10 | **STOP — labels.** Confirm `profile.seed.json` is filled → export ~200 varied listings to `data/labels/draft.csv` → Claude-drafted labels strictly from profile → **you review/edit** → import with fixed 50-eval split | `feat: label import tooling` (tooling only; data never committed) |
+| 4 | Ingest: GitHub client, zod, SHA short-circuit, `ingestIndex` hash diff, hourly cron, fixture tests from real JSON | `feat: hourly simplify ingest` |
+| 5 | **ML skeleton first** (re-sequenced): export/import endpoints + shared-secret auth, Python client, bge-small embed job, `ml.yml` (cron + dispatch + keepalive + caches) | `feat: ml export/import endpoints and embedding job` |
+| 6 | **JD fetcher, one commit per source:** 6a GH (direct+embedded)/Lever/Ashby → 6b Workday → 6c Oracle → 6d iCIMS. Probe gate before 6b/6c/6d | `feat: jd fetch — greenhouse/lever/ashby`, `… — workday`, `… — oracle`, `… — icims` |
+| 7 | GeoNames preprocess + committed lookup + location normalizer + tests + README attribution | `feat: offline geocoding` |
+| 8 | Hard filters (JD-text-aware class-year & sponsorship conflicts), one test per preference type × strength | `feat: hard filters` |
+| 9 | Scoring: `shared/features.json`, features (neutral-without-JD), priors, sigmoid, NO_JD_PENALTY, snapshot, Rocchio | `feat: prior-weight scoring` |
+| 10 | **STOP — labels.** Confirm `profile.seed.json` filled → export ~200 varied listings to `data/labels/draft.csv` (with `hadJd` column) → labels drafted from JD text where available, strictly from profile → **owner reviews/edits** → import with fixed 50-eval split | `feat: label import tooling` |
 | 11 | Training + eval + versioned push + promotion gate | `feat: personalized training with precision@10 gate` |
-| 12 | Matches page (score, top features in plain language, Applied→good-suggestion prompt, 👍/👎) + settings page | `feat: matches and settings ui` |
-| 13 | Digest: React Email, Resend client, HMAC links, per-frequency crons, wildcards | `feat: email digests` |
+| 12 | Matches page (score, plain-language top features, no-JD label, Applied→good-suggestion prompt, 👍/👎) + settings page | `feat: matches and settings ui` |
+| 13 | Digest: React Email (no-JD label), Resend, HMAC links, per-frequency crons, wildcards | `feat: email digests` |
 
 Done-when (from PROMPT.md): full pipeline end-to-end, real digest received with working feedback from email + web, precision@10 reported for model v1 vs prior-weights baseline, all pure logic tested, CLAUDE.md Commands section verified.

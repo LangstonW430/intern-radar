@@ -22,7 +22,7 @@
     },
     {
       "type": "roleCategory",
-      "value": ["<FILL: any of ai_ml | swe | data | research | quant | other>"],
+      "value": ["<FILL: any of ai_ml_data | swe | hardware | product | quant>"],
       "strength": "soft"
     },
     {
