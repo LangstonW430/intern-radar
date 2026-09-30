@@ -25,6 +25,10 @@ const featuresFileSchema = z.object({
   embeddingDim: z.number(),
   strengthPriors: z.record(z.string(), z.number()),
   noJdNeutral: z.number(),
+  feedbackWeights: z.object({
+    applied: z.number().positive(),
+    default: z.number().positive(),
+  }),
   features: z.array(featureDefSchema),
 });
 

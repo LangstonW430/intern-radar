@@ -4,6 +4,7 @@
   "embeddingDim": 384,
   "strengthPriors": { "strong": 1.0, "soft": 0.4, "hard": 0.0, "ignore": 0.0 },
   "noJdNeutral": 0.6,
+  "feedbackWeights": { "applied": 2.0, "default": 1.0 },
   "features": [
     { "name": "bias", "prior": -1.0, "bounds": [-6, 6] },
     { "name": "embed_sim_resume", "prior": 2.0, "bounds": [0, 6], "neutralWithoutJd": true },

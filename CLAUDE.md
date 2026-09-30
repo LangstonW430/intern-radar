@@ -80,6 +80,8 @@ When a listing has no JD, the two embedding-similarity features are set to neutr
 - Exploration items are tagged so training can account for them.
 - Every feedback action from email or the web is authenticated: web via session, email links via HMAC-signed, expiring tokens (`FEEDBACK_SIGNING_SECRET`). Unsubscribe links use the same signing scheme and work without signing in.
 
+How feedback becomes training data (`lib/feedbackAggregate.ts`): **one training row per (userId, listingId)**, never one per event. The target y is decided by the first matching rule — (1) the latest "Was this a good suggestion?" answer (good → 1, bad → 0), (2) else the latest thumbs (up → 1, down → 0), (3) else applied → 1; "latest" is by `createdAt`. The row's weight is `feedbackWeights.applied` (2.0) when the user applied to that listing — even when a suggestion answer set y — else `feedbackWeights.default` (1.0); both values live in `shared/features.json` and multiply the class-balanced sample weights in the Python trainer. Eval-split (userId, listingId) pairs are excluded from training entirely, feedback included, so feedback on eval listings never leaks; when a pair has both a train-split label and feedback, the feedback row replaces the label row.
+
 ## Cold start and evaluation
 
 - Bootstrap labels: ~200 real listings with Claude-drafted labels (good/bad + one-line reason) against the owner's filled-in profile, drafted from JD text where available and noting per listing whether a JD existed (`hadJd`), **reviewed and corrected by the owner** before import. Labels live in Convex and in gitignored `data/labels/`, never committed. Bootstrap labels are the owner's only — they train the global model; other users personalize from their own feedback via the per-user weights.

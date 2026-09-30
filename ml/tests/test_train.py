@@ -14,12 +14,20 @@ DIM = SPEC.dim
 SIM_IDX = SPEC.names.index("embed_sim_resume")
 
 
-def make_row(user: str, y: int, sim: float, split: str = "train") -> TrainingRow:
+def make_row(
+    user: str, y: int, sim: float, split: str = "train", weight: float = 1.0
+) -> TrainingRow:
     x = np.full(DIM, 0.5)
     x[0] = 1.0  # bias
     x[SIM_IDX] = sim
     return TrainingRow(
-        user_id=user, y=y, split=split, source="label", exploration=False, x=x
+        user_id=user,
+        y=y,
+        split=split,
+        source="label",
+        exploration=False,
+        x=x,
+        weight=weight,
     )
 
 
@@ -83,6 +91,26 @@ def test_precision_at_k():
     weights[SIM_IDX] = 5.0
     p = precision_at_k(rows, {"u1": weights}, weights, k=5)
     assert p == pytest.approx(4 / 5)
+
+
+def test_feature_spec_loads_feedback_weights():
+    assert SPEC.feedback_weights["applied"] == 2.0
+    assert SPEC.feedback_weights["default"] == 1.0
+
+
+def test_row_weight_moves_the_fit():
+    # Same data except a single positive row's weight: doubling it must pull
+    # the fitted similarity coefficient further toward that row's label.
+    def rows(weight: float) -> list[TrainingRow]:
+        base = [make_row("u1", 0, 0.35) for _ in range(12)]
+        base += [make_row("u1", 1, 0.85) for _ in range(3)]
+        base.append(make_row("u1", 1, 0.9, weight=weight))
+        return base
+
+    priors = {"u1": [0.0] * DIM}
+    w1, _ = train_models(rows(1.0), SPEC, priors)
+    w2, _ = train_models(rows(2.0), SPEC, priors)
+    assert w2[SIM_IDX] > w1[SIM_IDX]
 
 
 def test_rows_from_export_skips_missing_snapshots_and_checks_names():

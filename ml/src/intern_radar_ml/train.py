@@ -23,6 +23,7 @@ class TrainingRow:
     source: str
     exploration: bool
     x: np.ndarray
+    weight: float = 1.0
 
 
 def rows_from_export(export: dict[str, Any], spec: FeatureSpec) -> list[TrainingRow]:
@@ -43,6 +44,9 @@ def rows_from_export(export: dict[str, Any], spec: FeatureSpec) -> list[Training
                 source=raw["source"],
                 exploration=bool(raw.get("exploration", False)),
                 x=x,
+                weight=float(
+                    raw.get("weight", spec.feedback_weights["default"])
+                ),
             )
         )
     if skipped:
@@ -98,7 +102,9 @@ def train_models(
 
     X = np.stack([r.x for r in train_rows])
     y = np.array([r.y for r in train_rows], dtype=float)
-    sw = class_balanced_weights(y)
+    # Class balance × per-row weight (applied feedback counts double) —
+    # applied to the global fit and, via sw[mask], to every per-user fit.
+    sw = class_balanced_weights(y) * np.array([r.weight for r in train_rows])
 
     # Global model: regularized toward the average prior vector so it stays
     # sane with few labels.

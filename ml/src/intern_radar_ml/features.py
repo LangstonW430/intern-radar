@@ -19,6 +19,11 @@ class FeatureSpec:
         self.bounds: list[tuple[float, float]] = [
             (f["bounds"][0], f["bounds"][1]) for f in raw["features"]
         ]
+        # Row weights for feedback-derived training rows ("applied" counts
+        # double); shared with the TS aggregator via this same file.
+        self.feedback_weights: dict[str, float] = {
+            key: float(value) for key, value in raw["feedbackWeights"].items()
+        }
 
     @property
     def dim(self) -> int:

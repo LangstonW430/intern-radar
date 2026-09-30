@@ -1,6 +1,8 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { FEATURE_NAMES, priorWeights } from "../lib/features";
+import { FEATURE_NAMES, FEATURES_FILE, priorWeights } from "../lib/features";
+import { aggregateTrainingRows } from "../lib/feedbackAggregate";
+import type { TrainingRow } from "../lib/schemas/mlPayloads";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
@@ -70,17 +72,6 @@ export const exportResumesPending = internalQuery({
 export const exportTraining = internalQuery({
   args: {},
   handler: async (ctx) => {
-    const rows: {
-      userId: string;
-      listingId: string;
-      y: number;
-      split: "train" | "eval";
-      source: "label" | "feedback";
-      kind: string;
-      exploration: boolean;
-      features: Record<string, number> | null;
-    }[] = [];
-
     const matchFeatures = async (userId: Id<"users">, listingId: Id<"listings">) => {
       const match = await ctx.db
         .query("matches")
@@ -92,33 +83,41 @@ export const exportTraining = internalQuery({
       return { features: match.features, exploration: match.exploration };
     };
 
-    for (const label of await ctx.db.query("labels").collect()) {
-      const match = await matchFeatures(label.userId, label.listingId);
-      rows.push({
-        userId: label.userId,
-        listingId: label.listingId,
-        y: label.label === "good" ? 1 : 0,
-        split: label.split,
-        source: "label",
-        kind: label.label,
-        exploration: match?.exploration ?? false,
-        features: match?.features ?? null,
-      });
-    }
+    const labels = (await ctx.db.query("labels").collect()).map((l) => ({
+      userId: l.userId as string,
+      listingId: l.listingId as string,
+      label: l.label,
+      split: l.split,
+    }));
+    const feedback = (await ctx.db.query("feedback").collect()).map((f) => ({
+      userId: f.userId as string,
+      listingId: f.listingId as string,
+      kind: f.kind,
+      createdAt: f.createdAt,
+    }));
 
-    for (const entry of await ctx.db.query("feedback").collect()) {
-      const positive =
-        entry.kind === "applied" ||
-        entry.kind === "thumbs_up" ||
-        entry.kind === "good_suggestion";
-      const match = await matchFeatures(entry.userId, entry.listingId);
+    // One row per (userId, listingId): suggestion answers beat thumbs beat
+    // applied, applied doubles the weight, eval pairs never see feedback.
+    const aggregated = aggregateTrainingRows(
+      labels,
+      feedback,
+      FEATURES_FILE.feedbackWeights,
+    );
+
+    const rows: TrainingRow[] = [];
+    for (const spec of aggregated) {
+      const match = await matchFeatures(
+        spec.userId as Id<"users">,
+        spec.listingId as Id<"listings">,
+      );
       rows.push({
-        userId: entry.userId,
-        listingId: entry.listingId,
-        y: positive ? 1 : 0,
-        split: "train", // feedback never joins the fixed eval set
-        source: "feedback",
-        kind: entry.kind,
+        userId: spec.userId,
+        listingId: spec.listingId,
+        y: spec.y,
+        weight: spec.weight,
+        split: spec.split,
+        source: spec.source,
+        kind: spec.decidedBy,
         exploration: match?.exploration ?? false,
         features: match?.features ?? null,
       });
