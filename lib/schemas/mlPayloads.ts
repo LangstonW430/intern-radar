@@ -21,6 +21,22 @@ export const jdImportSchema = z.object({
 });
 export type JdImport = z.infer<typeof jdImportSchema>;
 
+export const labelsImportSchema = z.object({
+  email: z.email(),
+  items: z
+    .array(
+      z.object({
+        listingId: z.string(),
+        label: z.enum(["good", "bad"]),
+        reason: z.string(),
+        split: z.enum(["train", "eval"]),
+        hadJd: z.boolean(),
+      }),
+    )
+    .max(300),
+});
+export type LabelsImport = z.infer<typeof labelsImportSchema>;
+
 export const embeddingsImportSchema = z.object({
   items: z
     .array(

@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import {
   embeddingsImportSchema,
   jdImportSchema,
+  labelsImportSchema,
 } from "../lib/schemas/mlPayloads";
 import { seedProfilePayloadSchema } from "../lib/schemas/profileSeed";
 import { internal } from "./_generated/api";
@@ -88,6 +89,43 @@ http.route({
       });
     }
     return json({ error: `unknown kind: ${kind}` }, 400);
+  }),
+});
+
+http.route({
+  path: "/admin/label-candidates",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!isAuthorized(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const url = new URL(request.url);
+    const email = url.searchParams.get("email");
+    if (!email) return json({ error: "email required" }, 400);
+    const rows = await ctx.runQuery(internal.labels.exportLabelCandidates, {
+      email,
+      count: Number(url.searchParams.get("count")) || undefined,
+    });
+    return json({ rows });
+  }),
+});
+
+http.route({
+  path: "/admin/import-labels",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!isAuthorized(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const parsed = labelsImportSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return json({ issues: parsed.error.issues }, 400);
+    }
+    const result = await ctx.runMutation(
+      internal.labels.importLabels,
+      parsed.data,
+    );
+    return json(result);
   }),
 });
 
