@@ -134,6 +134,7 @@ export const upsertBatch = internalMutation({
     now: v.number(),
   },
   handler: async (ctx, { items, now }) => {
+    const touched: Id<"listings">[] = [];
     for (const item of items) {
       const existing = await ctx.db
         .query("listings")
@@ -141,15 +142,15 @@ export const upsertBatch = internalMutation({
         .unique();
 
       if (!existing) {
-        await ctx.db.insert("listings", {
-          ...item,
-          jdStatus: isJdSupported(item.atsType)
-            ? "pending"
-            : "unsupported",
-          jdAttempts: 0,
-          ingestedAt: now,
-          embedPending: true,
-        });
+        touched.push(
+          await ctx.db.insert("listings", {
+            ...item,
+            jdStatus: isJdSupported(item.atsType) ? "pending" : "unsupported",
+            jdAttempts: 0,
+            ingestedAt: now,
+            embedPending: true,
+          }),
+        );
         continue;
       }
 
@@ -174,6 +175,12 @@ export const upsertBatch = internalMutation({
         // Without a JD, the embedding is built from title+company+category.
         ...(titleChanged && !existing.jdText ? { embedPending: true } : {}),
         ...(urlChanged ? { embedPending: true } : {}),
+      });
+      touched.push(existing._id);
+    }
+    if (touched.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.scoring.scoreListingsForUsers, {
+        listingIds: touched,
       });
     }
   },

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
 import { preferenceValidator } from "./schema";
 
@@ -59,6 +60,8 @@ export const upsertFromSeed = internalMutation({
           ? { resumeEmbedding: undefined, preferenceVector: undefined }
           : {}),
       });
+      // Preferences may have changed — re-score everything against them.
+      await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
       return { userId, created: false, resumeChanged };
     }
 
@@ -67,6 +70,7 @@ export const upsertFromSeed = internalMutation({
       ...fields,
       resumeText: args.resumeText,
     });
+    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
     return { userId, created: true, resumeChanged: args.resumeText !== undefined };
   },
 });

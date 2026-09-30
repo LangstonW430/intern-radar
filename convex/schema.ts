@@ -119,6 +119,71 @@ export default defineSchema({
     lastMalformedCount: v.optional(v.number()),
   }),
 
+  matches: defineTable({
+    userId: v.id("users"),
+    listingId: v.id("listings"),
+    droppedBy: v.union(v.string(), v.null()),
+    // Feature snapshot exactly as scored — training reads these, so they
+    // must reflect what the model saw at the time.
+    features: v.record(v.string(), v.float64()),
+    rawScore: v.number(),
+    score: v.number(), // rawScore × NO_JD_PENALTY when no JD
+    modelVersion: v.number(), // 0 = strength-derived priors
+    exploration: v.boolean(),
+    sentAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user_listing", ["userId", "listingId"])
+    .index("by_user_score", ["userId", "score"])
+    .index("by_user_sent", ["userId", "sentAt"]),
+
+  feedback: defineTable({
+    userId: v.id("users"),
+    listingId: v.id("listings"),
+    kind: v.union(
+      v.literal("applied"),
+      v.literal("thumbs_up"),
+      v.literal("thumbs_down"),
+      v.literal("good_suggestion"),
+      v.literal("bad_suggestion"),
+    ),
+    source: v.union(v.literal("web"), v.literal("email")),
+    createdAt: v.number(),
+  })
+    .index("by_user_listing", ["userId", "listingId"])
+    .index("by_user", ["userId"])
+    .index("by_createdAt", ["createdAt"]),
+
+  labels: defineTable({
+    userId: v.id("users"),
+    listingId: v.id("listings"),
+    label: v.union(v.literal("good"), v.literal("bad")),
+    reason: v.string(),
+    reviewed: v.boolean(),
+    split: v.union(v.literal("train"), v.literal("eval")),
+    hadJd: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_split", ["split"]),
+
+  models: defineTable({
+    version: v.number(),
+    globalWeights: v.array(v.float64()),
+    featureNames: v.array(v.string()),
+    metrics: v.any(),
+    promoted: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_version", ["version"])
+    .index("by_promoted", ["promoted"]),
+
+  userWeights: defineTable({
+    userId: v.id("users"),
+    modelVersion: v.number(),
+    weights: v.array(v.float64()),
+  }).index("by_user_version", ["userId", "modelVersion"]),
+
   profiles: defineTable({
     userId: v.id("users"),
     email: v.string(),

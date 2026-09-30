@@ -1,5 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
 
 const MAX_JD_ATTEMPTS = 5;
@@ -78,6 +80,7 @@ export const importJdBatch = internalMutation({
   handler: async (ctx, { items }) => {
     const now = Date.now();
     let applied = 0;
+    const rescore: Id<"listings">[] = [];
     for (const item of items) {
       const id = ctx.db.normalizeId("listings", item.listingId);
       if (!id) continue;
@@ -93,6 +96,7 @@ export const importJdBatch = internalMutation({
           // The embedding text just changed from title-only to full JD.
           embedPending: true,
         });
+        rescore.push(id);
       } else if (item.jdStatus === "failed") {
         await ctx.db.patch(id, {
           jdStatus: listing.jdAttempts + 1 >= 5 ? "failed" : "pending",
@@ -107,6 +111,11 @@ export const importJdBatch = internalMutation({
         });
       }
       applied++;
+    }
+    if (rescore.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.scoring.scoreListingsForUsers, {
+        listingIds: rescore,
+      });
     }
     return { applied };
   },
@@ -130,6 +139,7 @@ export const importEmbeddingsBatch = internalMutation({
   },
   handler: async (ctx, { items, resumes }) => {
     let applied = 0;
+    const rescore: Id<"listings">[] = [];
     for (const item of items) {
       const id = ctx.db.normalizeId("listings", item.listingId);
       if (!id) continue;
@@ -140,6 +150,7 @@ export const importEmbeddingsBatch = internalMutation({
         embeddingVersion: item.embeddingVersion,
         embedPending: false,
       });
+      rescore.push(id);
       applied++;
     }
     for (const resume of resumes) {
@@ -157,7 +168,17 @@ export const importEmbeddingsBatch = internalMutation({
           ? {}
           : { preferenceVector: resume.embedding }),
       });
+      // A new resume vector invalidates every similarity — full re-score.
+      await ctx.scheduler.runAfter(0, internal.scoring.updatePreferenceVector, {
+        userId,
+      });
+      await ctx.scheduler.runAfter(1000, internal.scoring.rescoreAll, {});
       applied++;
+    }
+    if (rescore.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.scoring.scoreListingsForUsers, {
+        listingIds: rescore,
+      });
     }
     return { applied };
   },

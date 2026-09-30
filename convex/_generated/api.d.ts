@@ -17,6 +17,7 @@ import type * as lib_resendClient from "../lib/resendClient.js";
 import type * as ml from "../ml.js";
 import type * as otp from "../otp.js";
 import type * as profile from "../profile.js";
+import type * as scoring from "../scoring.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   ml: typeof ml;
   otp: typeof otp;
   profile: typeof profile;
+  scoring: typeof scoring;
 }>;
 
 /**
