@@ -15,9 +15,17 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       if (existingUserId) {
         return existingUserId;
       }
-      return await ctx.db.insert("users", {
-        email: email!.trim().toLowerCase(),
-      });
+      const normalized = email!.trim().toLowerCase();
+      // A profile seeded before first sign-in already created this user —
+      // link to it instead of creating a duplicate.
+      const existing = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("email"), normalized))
+        .unique();
+      if (existing) {
+        return existing._id;
+      }
+      return await ctx.db.insert("users", { email: normalized });
     },
   },
 });

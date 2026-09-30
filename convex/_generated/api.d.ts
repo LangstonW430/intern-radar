@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as lib_resendClient from "../lib/resendClient.js";
 import type * as otp from "../otp.js";
+import type * as profile from "../profile.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/resendClient": typeof lib_resendClient;
   otp: typeof otp;
+  profile: typeof profile;
 }>;
 
 /**
