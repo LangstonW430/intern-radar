@@ -10,7 +10,7 @@ from typing import Any
 import httpx
 
 from ..client import ConvexClient
-from . import ashby, greenhouse, lever
+from . import ashby, greenhouse, lever, workday
 from .base import FetchResult, HttpFetcher
 
 Fetcher = Callable[[dict[str, Any], HttpFetcher], FetchResult]
@@ -20,6 +20,7 @@ FETCHERS: dict[str, Fetcher] = {
     "greenhouse_embedded": greenhouse.fetch,
     "lever": lever.fetch,
     "ashby": ashby.fetch,
+    "workday": workday.fetch,
 }
 
 
