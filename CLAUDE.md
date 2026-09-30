@@ -119,7 +119,10 @@ When a listing has no JD, the two embedding-similarity features are set to neutr
 
 ## Commands
 
-<!-- Fill in once scaffolded -->
-- `pnpm dev` / `npx convex dev`
+- `pnpm dev` / `npx convex dev` (local: `CONVEX_AGENT_MODE=anonymous npx convex dev`)
 - `pnpm typecheck` / `pnpm lint` / `pnpm test`
+- `pnpm seed:profile` — load `profile.seed.json` + `private/resume.pdf` into Convex
+- `pnpm tsx scripts/export-label-draft.ts <email>` / `pnpm tsx scripts/import-labels.ts <email>` — bootstrap-label round trip (CSV in gitignored `data/labels/`)
+- `pnpm tsx scripts/build-geonames.ts <cities1000.txt> <admin1CodesASCII.txt>` — rebuild the geo lookup
 - `cd ml && uv run pytest`
+- `cd ml && uv run python -m intern_radar_ml jd|embed|train` (needs `CONVEX_SITE_URL` + `ML_SHARED_SECRET`)
