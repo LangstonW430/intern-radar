@@ -56,6 +56,12 @@ jobs:
           FASTEMBED_CACHE_PATH: ~/.cache/fastembed
         run: uv run python -m intern_radar_ml embed
 
+      - name: Train and push a model version
+        env:
+          CONVEX_SITE_URL: ${{ secrets.CONVEX_SITE_URL }}
+          ML_SHARED_SECRET: ${{ secrets.ML_SHARED_SECRET }}
+        run: uv run python -m intern_radar_ml train
+
       # Public-repo scheduled workflows are auto-disabled after 60 days
       # without repo activity; re-enabling ourselves on every run resets that.
       - name: Keepalive

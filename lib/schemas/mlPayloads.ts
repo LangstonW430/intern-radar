@@ -21,6 +21,16 @@ export const jdImportSchema = z.object({
 });
 export type JdImport = z.infer<typeof jdImportSchema>;
 
+export const modelImportSchema = z.object({
+  featureNames: z.array(z.string()).min(1),
+  globalWeights: z.array(z.number()).min(1),
+  userWeights: z
+    .array(z.object({ userId: z.string(), weights: z.array(z.number()) }))
+    .default([]),
+  metrics: z.record(z.string(), z.unknown()),
+});
+export type ModelImport = z.infer<typeof modelImportSchema>;
+
 export const labelsImportSchema = z.object({
   email: z.email(),
   items: z

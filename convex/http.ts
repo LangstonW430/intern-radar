@@ -3,6 +3,7 @@ import {
   embeddingsImportSchema,
   jdImportSchema,
   labelsImportSchema,
+  modelImportSchema,
 } from "../lib/schemas/mlPayloads";
 import { seedProfilePayloadSchema } from "../lib/schemas/profileSeed";
 import { internal } from "./_generated/api";
@@ -80,6 +81,9 @@ http.route({
       return json(
         await ctx.runQuery(internal.ml.exportEmbedPending, { paginationOpts }),
       );
+    }
+    if (kind === "training") {
+      return json(await ctx.runQuery(internal.ml.exportTraining, {}));
     }
     if (kind === "resumes") {
       return json({
@@ -163,6 +167,22 @@ http.route({
       internal.ml.importEmbeddingsBatch,
       parsed.data,
     );
+    return json(result);
+  }),
+});
+
+http.route({
+  path: "/ml/import/model",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    if (!isAuthorized(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const parsed = modelImportSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return json({ issues: parsed.error.issues }, 400);
+    }
+    const result = await ctx.runMutation(internal.ml.importModel, parsed.data);
     return json(result);
   }),
 });
