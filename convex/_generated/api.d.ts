@@ -10,11 +10,13 @@
 
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
+import type * as feedbackFns from "../feedbackFns.js";
 import type * as http from "../http.js";
 import type * as ingest from "../ingest.js";
 import type * as labels from "../labels.js";
 import type * as lib_github from "../lib/github.js";
 import type * as lib_resendClient from "../lib/resendClient.js";
+import type * as matchesApi from "../matchesApi.js";
 import type * as ml from "../ml.js";
 import type * as otp from "../otp.js";
 import type * as profile from "../profile.js";
@@ -29,11 +31,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   crons: typeof crons;
+  feedbackFns: typeof feedbackFns;
   http: typeof http;
   ingest: typeof ingest;
   labels: typeof labels;
   "lib/github": typeof lib_github;
   "lib/resendClient": typeof lib_resendClient;
+  matchesApi: typeof matchesApi;
   ml: typeof ml;
   otp: typeof otp;
   profile: typeof profile;

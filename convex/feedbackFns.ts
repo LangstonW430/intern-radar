@@ -1,0 +1,38 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import { mutation } from "./_generated/server";
+
+export const record = mutation({
+  args: {
+    listingId: v.id("listings"),
+    kind: v.union(
+      v.literal("applied"),
+      v.literal("thumbs_up"),
+      v.literal("thumbs_down"),
+      v.literal("good_suggestion"),
+      v.literal("bad_suggestion"),
+    ),
+  },
+  handler: async (ctx, { listingId, kind }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not signed in");
+    const listing = await ctx.db.get(listingId);
+    if (!listing) throw new Error("Unknown listing");
+
+    await ctx.db.insert("feedback", {
+      userId,
+      listingId,
+      kind,
+      source: "web",
+      createdAt: Date.now(),
+    });
+    // Embedding-level preferences shift; full re-scores happen on the next
+    // model promotion rather than per click.
+    if (kind === "applied" || kind === "thumbs_up" || kind === "thumbs_down") {
+      await ctx.scheduler.runAfter(0, internal.scoring.updatePreferenceVector, {
+        userId,
+      });
+    }
+  },
+});
