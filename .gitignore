@@ -22,6 +22,12 @@ __pycache__/
 .pytest_cache/
 ml/.ruff_cache/
 
+# Next.js / Vercel extras
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+*.pem
+
 # OS / editor
 .DS_Store
 Thumbs.db
