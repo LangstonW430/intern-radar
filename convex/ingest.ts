@@ -1,11 +1,14 @@
 import { v } from "convex/values";
 import { diffListings, type IndexEntry } from "../lib/diff";
+import { lookupCity } from "../lib/geo/data";
+import { geocodeLocations } from "../lib/geo/parse";
 import {
   isJdSupported,
   toListingSourceFields,
 } from "../lib/listingDoc";
 import { inScope, parseListingsFeed } from "../lib/schemas/simplify";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import {
   internalAction,
   internalMutation,
@@ -56,9 +59,10 @@ export const run = internalAction({
       const upserts = [...toInsert, ...toUpdate];
       for (let i = 0; i < upserts.length; i += BATCH_SIZE) {
         await ctx.runMutation(internal.ingest.upsertBatch, {
-          items: upserts
-            .slice(i, i + BATCH_SIZE)
-            .map((l) => toListingSourceFields(l)),
+          items: upserts.slice(i, i + BATCH_SIZE).map((l) => ({
+            ...toListingSourceFields(l),
+            geo: geocodeLocations(l.locations, lookupCity),
+          })),
           now,
         });
       }
@@ -171,6 +175,67 @@ export const upsertBatch = internalMutation({
         ...(titleChanged && !existing.jdText ? { embedPending: true } : {}),
         ...(urlChanged ? { embedPending: true } : {}),
       });
+    }
+  },
+});
+
+/** Recomputes geo for every listing — run after lookup/alias improvements. */
+export const regeocodeAll = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    let cursor: string | null = null;
+    let updated = 0;
+    for (;;) {
+      const page: {
+        page: { listingId: Id<"listings">; locations: string[] }[];
+        isDone: boolean;
+        continueCursor: string;
+      } = await ctx.runQuery(internal.ingest.listLocationsPage, { cursor });
+      const items = page.page.map((l) => ({
+        listingId: l.listingId,
+        geo: geocodeLocations(l.locations, lookupCity),
+      }));
+      if (items.length > 0) {
+        await ctx.runMutation(internal.ingest.patchGeoBatch, { items });
+        updated += items.length;
+      }
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+    console.log(`regeocode: updated ${updated} listings`);
+  },
+});
+
+export const listLocationsPage = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db
+      .query("listings")
+      .paginate({ numItems: 100, cursor });
+    return {
+      ...page,
+      page: page.page.map((l) => ({
+        listingId: l._id,
+        locations: l.locations,
+      })),
+    };
+  },
+});
+
+export const patchGeoBatch = internalMutation({
+  args: {
+    items: v.array(
+      v.object({
+        listingId: v.id("listings"),
+        geo: v.array(
+          v.object({ lat: v.float64(), lon: v.float64(), name: v.string() }),
+        ),
+      }),
+    ),
+  },
+  handler: async (ctx, { items }) => {
+    for (const item of items) {
+      await ctx.db.patch(item.listingId, { geo: item.geo });
     }
   },
 });
