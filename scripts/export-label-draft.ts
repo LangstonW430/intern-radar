@@ -1,11 +1,14 @@
 /**
- * Exports ~200 varied scored listings to data/labels/draft.csv for the owner
- * to label (good/bad + one-line reason). The label and reason columns start
- * empty unless a drafter fills them; nothing here guesses preferences.
+ * Exports ~200 varied scored listings for bootstrap labeling. Writes, all
+ * under the gitignored data/labels/:
+ *   - draft.csv                 the sheet to label (label/reason start empty)
+ *   - jd/<listingId>.txt        cleaned JD text for every row that has one
+ *   - profile.json              the profile (preferences + strengths + resume
+ *                               text) that labels must be judged against
  *
  * Usage: pnpm tsx scripts/export-label-draft.ts <email> [count]
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import process from "node:process";
 import { toCsv } from "../lib/csv";
 
@@ -41,7 +44,7 @@ async function main() {
     { headers: { Authorization: `Bearer ${secret}` } },
   );
   if (!res.ok) throw new Error(`export failed (${res.status}): ${await res.text()}`);
-  const { rows } = (await res.json()) as {
+  const { rows, profile } = (await res.json()) as {
     rows: {
       listingId: string;
       company: string;
@@ -51,8 +54,18 @@ async function main() {
       score: number;
       droppedBy: string | null;
       hadJd: boolean;
+      jdText: string | null;
     }[];
+    profile: Record<string, unknown> | null;
   };
+  if (profile === undefined) {
+    throw new Error(
+      "The deployment doesn't return a profile — deploy the latest Convex code first.",
+    );
+  }
+  if (profile === null) {
+    throw new Error(`No profile found for ${email} on this deployment.`);
+  }
 
   const csv = toCsv(
     rows.map((r) => ({
@@ -82,7 +95,26 @@ async function main() {
   );
   await mkdir("data/labels", { recursive: true });
   await writeFile("data/labels/draft.csv", csv, "utf8");
-  console.log(`wrote data/labels/draft.csv with ${rows.length} rows`);
+
+  // Fresh JD directory so stale files from a previous export can't mislead.
+  await rm("data/labels/jd", { recursive: true, force: true });
+  await mkdir("data/labels/jd", { recursive: true });
+  let jdCount = 0;
+  for (const row of rows) {
+    if (row.jdText) {
+      await writeFile(`data/labels/jd/${row.listingId}.txt`, row.jdText, "utf8");
+      jdCount++;
+    }
+  }
+  await writeFile(
+    "data/labels/profile.json",
+    JSON.stringify(profile, null, 2),
+    "utf8",
+  );
+  console.log(
+    `wrote data/labels/draft.csv (${rows.length} rows), ` +
+      `${jdCount} JD files under data/labels/jd/, and data/labels/profile.json`,
+  );
 }
 
 main().catch((err) => {

@@ -62,7 +62,28 @@ export const exportLabelCandidates = internalQuery({
         jdText: listing.jdText ?? null,
       });
     }
-    return rows;
+
+    // The labeler judges strictly against the user's stated profile, so the
+    // export carries it alongside the candidates (all under gitignored
+    // data/labels/ on the client side).
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    return {
+      rows,
+      profile: profile
+        ? {
+            email: profile.email,
+            gradDate: profile.gradDate,
+            classYear: profile.classYear,
+            degreeLevel: profile.degreeLevel,
+            preferences: profile.preferences,
+            threshold: profile.threshold,
+            resumeText: profile.resumeText ?? null,
+          }
+        : null,
+    };
   },
 });
 

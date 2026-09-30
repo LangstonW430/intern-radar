@@ -119,11 +119,11 @@ http.route({
     const url = new URL(request.url);
     const email = url.searchParams.get("email");
     if (!email) return json({ error: "email required" }, 400);
-    const rows = await ctx.runQuery(internal.labels.exportLabelCandidates, {
+    const result = await ctx.runQuery(internal.labels.exportLabelCandidates, {
       email,
       count: Number(url.searchParams.get("count")) || undefined,
     });
-    return json({ rows });
+    return json(result);
   }),
 });
 
