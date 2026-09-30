@@ -1,0 +1,382 @@
+[
+  {
+    "source": "Simplify",
+    "category": "Product",
+    "company_name": "Box",
+    "id": "e264f6ed-d02f-4138-9e9a-dcce1ab4b6c2",
+    "title": "Product Management Intern - Internal Developer Platforms",
+    "active": false,
+    "terms": [
+      "Winter 2027",
+      "Spring 2027",
+      "Summer 2027"
+    ],
+    "date_updated": 1771641529,
+    "date_posted": 1771641529,
+    "url": "https://job-boards.greenhouse.io/boxinc/jobs/7550753",
+    "locations": [
+      "San Carlos, CA"
+    ],
+    "company_url": "https://simplify.jobs/c/Box",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "Stripe",
+    "id": "560a5280-7fa2-41f8-9211-f33f1af97c3d",
+    "title": "PhD Data Scientist Intern",
+    "active": false,
+    "terms": [
+      "Winter 2026",
+      "Spring 2027",
+      "Summer 2027"
+    ],
+    "date_updated": 1777674731,
+    "date_posted": 1777673998,
+    "url": "https://stripe.com/jobs/search?gh_jid=7874965",
+    "locations": [
+      "Seattle, WA",
+      "SF",
+      "Chicago, IL",
+      "NYC"
+    ],
+    "company_url": "https://simplify.jobs/c/Stripe",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "PhD"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "Software",
+    "company_name": "Palantir",
+    "id": "ffc1f08c-7dd5-4fce-986e-2e3b824aabb4",
+    "title": "Forward Deployed Software Engineer Intern - Commercial",
+    "active": true,
+    "terms": [
+      "Winter 2027",
+      "Spring 2027",
+      "Summer 2027",
+      "Fall 2027",
+      "Winter 2028",
+      "Spring 2028"
+    ],
+    "date_updated": 1782857465,
+    "date_posted": 1782857114,
+    "url": "https://jobs.lever.co/palantir/d5486403-c050-4920-b2e0-91b69b61ebb2/apply",
+    "locations": [
+      "Chicago, IL"
+    ],
+    "company_url": "https://simplify.jobs/c/Palantir",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "Software",
+    "company_name": "Confluent",
+    "id": "2c205577-98ac-44aa-95a6-3ab4bc21d478",
+    "title": "Software Engineer Intern",
+    "active": false,
+    "terms": [
+      "Winter 2026",
+      "Spring 2027",
+      "Summer 2027"
+    ],
+    "date_updated": 1770131513,
+    "date_posted": 1770131513,
+    "url": "https://jobs.ashbyhq.com/confluent/95338ba6-bdcd-4a0e-86e8-e30cf6308c31/application",
+    "locations": [
+      "Remote in UK"
+    ],
+    "company_url": "https://simplify.jobs/c/Confluent",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's",
+      "Master's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "Bloom Energy",
+    "id": "f126ee64-c068-4148-b3f5-449c16a7a4d1",
+    "title": "Data Analyst Intern",
+    "active": false,
+    "terms": [
+      "Winter 2026",
+      "Spring 2026",
+      "Summer 2026",
+      "Fall 2026",
+      "Winter 2027",
+      "Spring 2027",
+      "Summer 2027"
+    ],
+    "date_updated": 1770248316,
+    "date_posted": 1770248316,
+    "url": "https://bloomenergy.wd1.myworkdayjobs.com/bloomenergycareers/job/San-Jose-California/Data-Analyst-Intern_JR-21562",
+    "locations": [
+      "San Jose, CA"
+    ],
+    "company_url": "https://simplify.jobs/c/Bloom-Energy",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "Quant",
+    "company_name": "GTS",
+    "id": "b72e38e3-5515-4406-8ff2-006e8701c95f",
+    "title": "Quantitative Trading Intern",
+    "active": false,
+    "terms": [
+      "Summer 2027"
+    ],
+    "date_updated": 1773092144,
+    "date_posted": 1773092144,
+    "url": "https://careers-gtsx.icims.com/jobs/1588/job?mobile=true&needsRedirect=false",
+    "locations": [
+      "NYC"
+    ],
+    "company_url": "https://simplify.jobs/c/GTS",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's",
+      "Master's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "Powell",
+    "id": "94a64905-2daa-493f-86a3-c4103328999a",
+    "title": "R&D Software Engineering Intern",
+    "active": false,
+    "terms": [
+      "Summer 2027"
+    ],
+    "date_updated": 1770160472,
+    "date_posted": 1770160472,
+    "url": "https://ekcf.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/6812",
+    "locations": [
+      "Houston, TX"
+    ],
+    "company_url": "https://simplify.jobs/c/Powell",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "TikTok",
+    "id": "0774f31a-26bd-433d-bc51-3d4bbb820b0d",
+    "title": "Research Scientist Intern - TikTok Search / Generative AI - LLM",
+    "active": true,
+    "terms": [
+      "Summer 2027"
+    ],
+    "date_updated": 1776406681,
+    "date_posted": 1776406269,
+    "url": "https://lifeattiktok.com/search/7629250876813642037",
+    "locations": [
+      "San Jose, CA"
+    ],
+    "company_url": "https://simplify.jobs/c/TikTok",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "PhD"
+    ]
+  },
+  {
+    "date_updated": 1771856741,
+    "sponsorship": "Offers Sponsorship",
+    "active": false,
+    "degrees": [
+      "Bachelor's"
+    ],
+    "url": "https://wavetronix.breezy.hr/p/b89da1eae7f3-computer-science-internship-summer-2026",
+    "company_name": "Wavetronix",
+    "title": "Computer Science Internship",
+    "locations": [
+      "Springville, UT"
+    ],
+    "terms": [
+      "Summer 2026"
+    ],
+    "category": "Software Engineering",
+    "source": "Saugatsaugat",
+    "id": "a430687a-9bfd-47b1-b481-8713f4e857b3",
+    "date_posted": 1771427429,
+    "company_url": "",
+    "is_visible": true
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "Correlation One",
+    "id": "ab020a18-1d3e-4acc-b5a3-de605baf6b1e",
+    "title": "Lead Instructor: Data Analytics – Apprenticeship Program",
+    "active": false,
+    "terms": [
+      "Spring 2026",
+      "Summer 2026",
+      "Spring 2027",
+      "Summer 2027"
+    ],
+    "date_updated": 1772062268,
+    "date_posted": 1772062268,
+    "url": "https://job-boards.greenhouse.io/correlationone/jobs/5812901004",
+    "locations": [
+      "Remote in Canada",
+      "Remote in USA",
+      "Remote in UK"
+    ],
+    "company_url": "https://simplify.jobs/c/Correlation-One",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "GE Vernova",
+    "id": "1098ce7b-395b-4b20-8035-499cba8a8ab0",
+    "title": "GE Vernova Digital Technology Intern",
+    "active": false,
+    "terms": [
+      "Summer 2027"
+    ],
+    "date_updated": 1772666911,
+    "date_posted": 1772666911,
+    "url": "https://gevernova.wd5.myworkdayjobs.com/vernova_externalsite/job/Atlanta/GE-Vernova-Digital-Technology-Internship---Summer-2027_R5034333-2",
+    "locations": [
+      "Greenville, SC",
+      "Schenectady, NY",
+      "Atlanta, GA"
+    ],
+    "company_url": "https://simplify.jobs/c/GE-Vernova",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's",
+      "Master's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "Intel",
+    "id": "2e846582-463b-4d4a-bb63-748e93b3f2da",
+    "title": "Operations Research – Engineering Analytics Intern",
+    "active": false,
+    "terms": [
+      "Winter 2026",
+      "Spring 2026",
+      "Summer 2026",
+      "Fall 2026",
+      "Winter 2027",
+      "Spring 2027",
+      "Summer 2027"
+    ],
+    "date_updated": 1770334868,
+    "date_posted": 1770334868,
+    "url": "https://intel.wd1.myworkdayjobs.com/en-us/external/job/US-Arizona-Phoenix/Operations-Research--Engineering-Analytics-Intern_JR0279579",
+    "locations": [
+      "Phoenix, AZ"
+    ],
+    "company_url": "https://simplify.jobs/c/Intel",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Master's"
+    ]
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "LabCorp",
+    "id": "c8bc1314-f704-4a89-be55-0e45d62100d0",
+    "title": "Student Worker - Data Science",
+    "active": false,
+    "terms": [
+      "N/A"
+    ],
+    "date_updated": 1770076165,
+    "date_posted": 1770076165,
+    "url": "https://labcorp.wd1.myworkdayjobs.com/external/job/Durham-NC/Student-Worker---Data-Science_2531219",
+    "locations": [
+      "Durham, NC"
+    ],
+    "company_url": "https://simplify.jobs/c/LabCorp",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": []
+  },
+  {
+    "source": "Simplify",
+    "category": "AI/ML/Data",
+    "company_name": "Strategic Education",
+    "id": "f18d7872-7514-4f8c-b487-cfddbb0f32bf",
+    "title": "Data Scientist",
+    "active": false,
+    "terms": [
+      "Summer 2026"
+    ],
+    "date_updated": 1770074744,
+    "date_posted": 1770074744,
+    "url": "https://strayer.wd1.myworkdayjobs.com/en-US/SEI/job/VA-Herndon-Corporate/Data-Scientist-Intern_R29379",
+    "locations": [
+      "Reston, VA"
+    ],
+    "company_url": "https://simplify.jobs/c/c37aef6c-b4ea-4d9f-a94f-9ecdc9ce90f6",
+    "is_visible": true,
+    "sponsorship": "Other",
+    "degrees": [
+      "Bachelor's",
+      "Master's"
+    ]
+  },
+  {
+    "date_updated": 1787706974,
+    "sponsorship": "Offers Sponsorship",
+    "active": true,
+    "degrees": [
+      "Bachelor's"
+    ],
+    "url": "https://grnh.se/abfli75k1us",
+    "company_name": "Steven's Capital Management",
+    "title": "Software Engineer",
+    "locations": [
+      "Radnor, PA"
+    ],
+    "terms": [
+      "Summer 2027"
+    ],
+    "category": "Software Engineering",
+    "source": "Zaku-Seven",
+    "id": "3350268b-7da8-41ee-bcc6-c85f795975ac",
+    "date_posted": 1787706974,
+    "company_url": "",
+    "is_visible": true
+  }
+]

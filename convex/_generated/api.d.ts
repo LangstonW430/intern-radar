@@ -9,7 +9,10 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as ingest from "../ingest.js";
+import type * as lib_github from "../lib/github.js";
 import type * as lib_resendClient from "../lib/resendClient.js";
 import type * as otp from "../otp.js";
 import type * as profile from "../profile.js";
@@ -22,7 +25,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  crons: typeof crons;
   http: typeof http;
+  ingest: typeof ingest;
+  "lib/github": typeof lib_github;
   "lib/resendClient": typeof lib_resendClient;
   otp: typeof otp;
   profile: typeof profile;
