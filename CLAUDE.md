@@ -24,7 +24,7 @@ Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new post
 - **Email:** Resend + React Email, sending from a verified subdomain of the owner's domain
 - **ML job:** Python 3.12 on GitHub Actions (nightly cron + `repository_dispatch`), managed with uv
   - JD fetching: httpx against public/internal ATS JSON endpoints; Playwright (cached chromium) only as the iCIMS fallback
-  - Embeddings: `BAAI/bge-small-en-v1.5` via sentence-transformers
+  - Embeddings: `BAAI/bge-small-en-v1.5` via fastembed (ONNX Runtime — no torch; lighter CI installs and runs under Windows App Control locally)
   - Models: scikit-learn logistic regression (global + per-user offsets), numpy, pandas
   - Tests: pytest
 - **Inference:** plain TypeScript inside Convex (dot product + sigmoid over stored weights). No model server.

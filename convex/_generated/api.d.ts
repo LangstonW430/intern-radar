@@ -14,6 +14,7 @@ import type * as http from "../http.js";
 import type * as ingest from "../ingest.js";
 import type * as lib_github from "../lib/github.js";
 import type * as lib_resendClient from "../lib/resendClient.js";
+import type * as ml from "../ml.js";
 import type * as otp from "../otp.js";
 import type * as profile from "../profile.js";
 
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   ingest: typeof ingest;
   "lib/github": typeof lib_github;
   "lib/resendClient": typeof lib_resendClient;
+  ml: typeof ml;
   otp: typeof otp;
   profile: typeof profile;
 }>;
