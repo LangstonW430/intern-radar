@@ -2,10 +2,15 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { FEATURE_NAMES, FEATURES_FILE, priorWeights } from "../lib/features";
 import { aggregateTrainingRows } from "../lib/feedbackAggregate";
+import { buildJdExtract, JD_EXTRACT_VERSION } from "../lib/jdExtract";
 import type { TrainingRow } from "../lib/schemas/mlPayloads";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery } from "./_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "./_generated/server";
 
 const MAX_JD_ATTEMPTS = 5;
 
@@ -242,6 +247,7 @@ export const importJdBatch = internalMutation({
           jdStatus: "fetched",
           jdSource: item.jdSource,
           jdText: item.jdText,
+          jdExtract: item.jdText ? buildJdExtract(item.jdText) : undefined,
           jdFetchedAt: now,
           jdError: undefined,
           // The embedding text just changed from title-only to full JD.
@@ -269,6 +275,75 @@ export const importJdBatch = internalMutation({
       });
     }
     return { applied };
+  },
+});
+
+/** Recomputes jdExtract for every fetched listing (new dictionary or
+ * extractor version). Safe to re-run; skips docs already on the current
+ * version unless force is set. */
+export const backfillJdExtracts = internalAction({
+  args: { force: v.optional(v.boolean()) },
+  handler: async (ctx, { force }) => {
+    let cursor: string | null = null;
+    let updated = 0;
+    for (;;) {
+      const page: {
+        page: { listingId: Id<"listings">; jdText: string | null; extractVersion: number | null }[];
+        isDone: boolean;
+        continueCursor: string;
+      } = await ctx.runQuery(internal.ml.listFetchedJdPage, { cursor });
+      const items = page.page
+        .filter(
+          (l) =>
+            l.jdText &&
+            (force || l.extractVersion !== JD_EXTRACT_VERSION),
+        )
+        .map((l) => ({
+          listingId: l.listingId,
+          jdExtract: buildJdExtract(l.jdText!),
+        }));
+      for (let i = 0; i < items.length; i += 50) {
+        await ctx.runMutation(internal.ml.patchJdExtracts, {
+          items: items.slice(i, i + 50),
+        });
+        updated += Math.min(50, items.length - i);
+      }
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+    console.log(`backfillJdExtracts: updated ${updated} listings`);
+  },
+});
+
+export const listFetchedJdPage = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db
+      .query("listings")
+      .withIndex("by_jdStatus", (q) => q.eq("jdStatus", "fetched"))
+      .paginate({ numItems: 100, cursor });
+    return {
+      ...page,
+      page: page.page.map((l) => ({
+        listingId: l._id,
+        jdText: l.jdText ?? null,
+        extractVersion:
+          (l.jdExtract as { version?: number } | undefined)?.version ?? null,
+      })),
+    };
+  },
+});
+
+export const patchJdExtracts = internalMutation({
+  args: {
+    items: v.array(
+      v.object({ listingId: v.id("listings"), jdExtract: v.any() }),
+    ),
+  },
+  handler: async (ctx, { items }) => {
+    for (const item of items) {
+      await ctx.db.patch(item.listingId, { jdExtract: item.jdExtract });
+    }
   },
 });
 

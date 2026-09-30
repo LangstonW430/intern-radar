@@ -89,6 +89,9 @@ export default defineSchema({
     ),
     jdSource: v.optional(v.string()),
     jdText: v.optional(v.string()),
+    // Rule-based extraction (lib/jdExtract): sections, skills, facts.
+    // Shaped by JD_EXTRACT_VERSION; recomputed by ml:backfillJdExtracts.
+    jdExtract: v.optional(v.any()),
     jdFetchedAt: v.optional(v.number()),
     jdError: v.optional(v.string()),
     jdAttempts: v.number(),
