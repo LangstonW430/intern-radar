@@ -171,5 +171,5 @@ def test_fetch_one_fails_soft_on_exceptions():
 
 
 def test_fetch_one_skips_unbuilt_sources():
-    assert fetch_one({"atsType": "oracle", "url": "x"}, make_http(lambda r: None)) is None
+    assert fetch_one({"atsType": "icims", "url": "x"}, make_http(lambda r: None)) is None
     assert fetch_one({"atsType": "other", "url": "x"}, make_http(lambda r: None)) is None
