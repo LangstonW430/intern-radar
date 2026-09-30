@@ -5,8 +5,10 @@ import {
   labelsImportSchema,
   modelImportSchema,
 } from "../lib/schemas/mlPayloads";
+import { verifyFeedbackToken } from "../lib/feedbackToken";
 import { seedProfilePayloadSchema } from "../lib/schemas/profileSeed";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 
@@ -168,6 +170,48 @@ http.route({
       parsed.data,
     );
     return json(result);
+  }),
+});
+
+const FEEDBACK_KINDS = new Set([
+  "applied",
+  "thumbs_up",
+  "thumbs_down",
+  "good_suggestion",
+  "bad_suggestion",
+]);
+
+http.route({
+  path: "/feedback/redeem",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const appUrl = process.env.APP_URL ?? "";
+    const redirect = (params: string) =>
+      new Response(null, {
+        status: 302,
+        headers: { Location: `${appUrl}/matches?${params}` },
+      });
+
+    const token = new URL(request.url).searchParams.get("token");
+    const secret = process.env.FEEDBACK_SIGNING_SECRET;
+    if (!token || !secret) return redirect("fb=invalid");
+    const payload = await verifyFeedbackToken(token, secret, Date.now());
+    if (!payload || !FEEDBACK_KINDS.has(payload.kind)) {
+      return redirect("fb=invalid");
+    }
+    try {
+      await ctx.runMutation(internal.digestData.recordEmailFeedback, {
+        userId: payload.userId as Id<"users">,
+        listingId: payload.listingId as Id<"listings">,
+        kind: payload.kind as "applied",
+      });
+    } catch (error) {
+      console.error("feedback redeem failed", error);
+      return redirect("fb=invalid");
+    }
+    return payload.kind === "applied"
+      ? redirect(`fb=ok&prompt=${payload.listingId}`)
+      : redirect("fb=ok");
   }),
 });
 

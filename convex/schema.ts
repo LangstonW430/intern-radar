@@ -135,7 +135,8 @@ export default defineSchema({
   })
     .index("by_user_listing", ["userId", "listingId"])
     .index("by_user_score", ["userId", "score"])
-    .index("by_user_sent", ["userId", "sentAt"]),
+    .index("by_user_sent", ["userId", "sentAt"])
+    .index("by_user_created", ["userId", "createdAt"]),
 
   feedback: defineTable({
     userId: v.id("users"),

@@ -10,6 +10,8 @@
 
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
+import type * as digest from "../digest.js";
+import type * as digestData from "../digestData.js";
 import type * as feedbackFns from "../feedbackFns.js";
 import type * as http from "../http.js";
 import type * as ingest from "../ingest.js";
@@ -31,6 +33,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   crons: typeof crons;
+  digest: typeof digest;
+  digestData: typeof digestData;
   feedbackFns: typeof feedbackFns;
   http: typeof http;
   ingest: typeof ingest;

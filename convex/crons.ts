@@ -10,4 +10,8 @@ crons.interval(
   {},
 );
 
+// Hourly tick; each profile's frequency window (instant/daily/weekly)
+// decides whether anything actually sends.
+crons.hourly("digest tick", { minuteUTC: 40 }, internal.digest.tick, {});
+
 export default crons;

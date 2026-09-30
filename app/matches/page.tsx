@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import Header from "@/components/Header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -14,10 +15,23 @@ type FeedbackKind =
   | "bad_suggestion";
 
 export default function MatchesPage() {
+  return (
+    <Suspense>
+      <MatchesContent />
+    </Suspense>
+  );
+}
+
+function MatchesContent() {
   const matches = useQuery(api.matchesApi.list, {});
   const record = useMutation(api.feedbackFns.record);
+  const searchParams = useSearchParams();
+  // Email "I applied" links land here with ?prompt=<listingId> so the
+  // good-suggestion question still gets asked.
   const [suggestionPromptFor, setSuggestionPromptFor] =
-    useState<Id<"listings"> | null>(null);
+    useState<Id<"listings"> | null>(
+      (searchParams.get("prompt") as Id<"listings"> | null) ?? null,
+    );
 
   async function give(listingId: Id<"listings">, kind: FeedbackKind) {
     await record({ listingId, kind });
