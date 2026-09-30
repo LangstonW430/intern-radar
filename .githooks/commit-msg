@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+# Strip any Claude/Anthropic attribution from commit messages.
+msg_file="$1"
+tmp="$(mktemp)"
+grep -v -i -E \
+  -e '^Co-Authored-By:.*(Claude|anthropic\.com)' \
+  -e 'Generated with \[?Claude Code' \
+  -e '^Claude-Session:' \
+  "$msg_file" > "$tmp"
+# Trim trailing blank lines left behind
+awk 'NF{p=NR} {l[NR]=$0} END{for(i=1;i<=p;i++) print l[i]}' "$tmp" > "$msg_file"
+rm -f "$tmp"

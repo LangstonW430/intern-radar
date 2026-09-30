@@ -1,0 +1,27 @@
+# Secrets and private data — never commit (see CLAUDE.md)
+.env*
+!.env.example
+profile.seed.json
+private/
+data/labels/
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+coverage/
+
+# Convex local state
+.convex/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+ml/.ruff_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db

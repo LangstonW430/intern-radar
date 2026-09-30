@@ -1,0 +1,49 @@
+{
+  "email": "<FILL: your sign-in email, must be in ALLOWED_EMAILS>",
+  "gradDate": "<FILL: YYYY-MM>",
+  "classYear": "<FILL: freshman | sophomore | junior | senior | masters | phd — as of the target summer's application season>",
+  "degreeLevel": "<FILL: bachelors | masters | phd>",
+  "resumePath": "private/resume.pdf",
+  "digest": {
+    "frequency": "<FILL: instant | daily | weekly>",
+    "threshold": 0.6,
+    "wildcards": 2
+  },
+  "preferences": [
+    {
+      "type": "location",
+      "value": { "places": ["<FILL: City, ST>"], "radiusMiles": 50 },
+      "strength": "soft"
+    },
+    {
+      "type": "workMode",
+      "value": ["<FILL: any of remote | hybrid | onsite>"],
+      "strength": "soft"
+    },
+    {
+      "type": "roleCategory",
+      "value": ["<FILL: any of ai_ml | swe | data | research | quant | other>"],
+      "strength": "soft"
+    },
+    {
+      "type": "sponsorship",
+      "value": "<FILL: needs_sponsorship | no_sponsorship_needed>",
+      "strength": "soft"
+    },
+    {
+      "type": "classYear",
+      "value": "exclude_mismatched",
+      "strength": "hard"
+    },
+    {
+      "type": "degreeLevel",
+      "value": "exclude_mismatched",
+      "strength": "hard"
+    },
+    {
+      "type": "excludeCompanies",
+      "value": [],
+      "strength": "hard"
+    }
+  ]
+}
