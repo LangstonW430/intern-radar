@@ -61,11 +61,9 @@ export const upsertFromSeed = internalMutation({
         ...(args.resumeText !== undefined
           ? { resumeText: args.resumeText }
           : {}),
-        // Stale vectors must not outlive the text they were computed from;
-        // the ML job regenerates them on its next run.
-        ...(resumeChanged
-          ? { resumeEmbedding: undefined, preferenceVector: undefined }
-          : {}),
+        // A stale vector must not outlive the text it was computed from;
+        // the ML job regenerates it on its next run.
+        ...(resumeChanged ? { resumeEmbedding: undefined } : {}),
       });
       // Preferences may have changed — re-score everything against them.
       await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
@@ -203,8 +201,8 @@ export const resetLearnedWeights = mutation({
   },
 });
 
-/** Deletes the account and all its data: profile, matches, feedback,
- * labels, user weights, and auth records. Irreversible. */
+/** Deletes the account and all its data: profile (keyword weights
+ * included), matches, feedback, labels, and auth records. Irreversible. */
 export const deleteMyAccount = mutation({
   args: {},
   handler: async (ctx) => {
@@ -228,12 +226,6 @@ export const deleteMyAccount = mutation({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
     for (const doc of labels) await ctx.db.delete(doc._id);
-
-    const weights = await ctx.db
-      .query("userWeights")
-      .withIndex("by_user_version", (q) => q.eq("userId", userId))
-      .collect();
-    for (const doc of weights) await ctx.db.delete(doc._id);
 
     const profile = await ctx.db
       .query("profiles")

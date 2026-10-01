@@ -83,9 +83,7 @@ export const complete = mutation({
         ...(args.resumeText !== undefined
           ? { resumeText: args.resumeText }
           : {}),
-        ...(resumeChanged
-          ? { resumeEmbedding: undefined, preferenceVector: undefined }
-          : {}),
+        ...(resumeChanged ? { resumeEmbedding: undefined } : {}),
       });
     } else {
       await ctx.db.insert("profiles", {

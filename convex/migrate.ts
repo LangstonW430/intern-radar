@@ -90,38 +90,6 @@ export const initKeywordWeights = internalMutation({
   },
 });
 
-/** Deletes every trained-model document. Run (after the keyword model is
- * live) before the deploy that drops the models/userWeights tables —
- * Convex refuses to remove a table definition that still has documents. */
-export const purgeModelTables = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const models = await ctx.db.query("models").collect();
-    for (const doc of models) await ctx.db.delete(doc._id);
-    const weights = await ctx.db.query("userWeights").collect();
-    for (const doc of weights) await ctx.db.delete(doc._id);
-    console.log(
-      `purgeModelTables: deleted ${models.length} models, ${weights.length} userWeights`,
-    );
-  },
-});
-
-/** Unsets the legacy Rocchio preference vector on every profile so the
- * field can be removed from the schema. */
-export const clearPreferenceVectors = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const profiles = await ctx.db.query("profiles").collect();
-    let cleared = 0;
-    for (const profile of profiles) {
-      if (profile.preferenceVector === undefined) continue;
-      await ctx.db.patch(profile._id, { preferenceVector: undefined });
-      cleared++;
-    }
-    console.log(`clearPreferenceVectors: cleared ${cleared} profiles`);
-  },
-});
-
 export const listKeywordBackfillPage = internalQuery({
   args: { cursor: v.union(v.string(), v.null()) },
   handler: async (ctx, { cursor }) => {

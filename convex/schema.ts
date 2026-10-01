@@ -225,23 +225,6 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_split", ["split"]),
 
-  models: defineTable({
-    version: v.number(),
-    globalWeights: v.array(v.float64()),
-    featureNames: v.array(v.string()),
-    metrics: v.any(),
-    promoted: v.boolean(),
-    createdAt: v.number(),
-  })
-    .index("by_version", ["version"])
-    .index("by_promoted", ["promoted"]),
-
-  userWeights: defineTable({
-    userId: v.id("users"),
-    modelVersion: v.number(),
-    weights: v.array(v.float64()),
-  }).index("by_user_version", ["userId", "modelVersion"]),
-
   profiles: defineTable({
     userId: v.id("users"),
     email: v.string(),
@@ -256,7 +239,6 @@ export default defineSchema({
     keywordWeights: v.optional(keywordWeightsValidator),
     resumeText: v.optional(v.string()),
     resumeEmbedding: v.optional(v.array(v.float64())),
-    preferenceVector: v.optional(v.array(v.float64())),
     threshold: v.number(),
     frequency: v.union(
       v.literal("instant"),
