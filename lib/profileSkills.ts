@@ -1,4 +1,9 @@
 import type { Interest } from "./schemas/profileSeed";
+import {
+  keywordIdForInterest,
+  matchVocabulary,
+  VOCAB_BY_ID,
+} from "./vocabulary";
 
 /**
  * Skill-list helpers for onboarding and settings. Suggestions are always
@@ -42,4 +47,23 @@ export function suggestInterests(
   return resumeSkills
     .filter((s) => !taken.has(s.trim().toLowerCase()))
     .slice(0, max);
+}
+
+/** Domain / role / work-style vocabulary terms found in the resume text —
+ * offered as interest chips alongside the detected skills (which have their
+ * own list and would be noise here). Offers only, never auto-added. */
+export function suggestInterestsFromResume(
+  resumeText: string,
+  existing: Interest[],
+  max = 8,
+): string[] {
+  const taken = new Set(existing.map((i) => keywordIdForInterest(i.keyword)));
+  const out: string[] = [];
+  for (const id of matchVocabulary(resumeText)) {
+    const entry = VOCAB_BY_ID.get(id);
+    if (!entry || entry.category === "skill" || taken.has(id)) continue;
+    out.push(entry.name);
+    if (out.length >= max) break;
+  }
+  return out;
 }

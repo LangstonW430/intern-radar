@@ -7,7 +7,10 @@ import InterestsEditor, { type InterestItem } from "@/components/InterestsEditor
 import SkillsEditor from "@/components/SkillsEditor";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { mergeSkillSuggestions } from "@/lib/profileSkills";
+import {
+  mergeSkillSuggestions,
+  suggestInterestsFromResume,
+} from "@/lib/profileSkills";
 
 const STRENGTHS = ["hard", "strong", "soft", "ignore"] as const;
 type Strength = (typeof STRENGTHS)[number];
@@ -378,7 +381,12 @@ export default function OnboardingPage() {
         <InterestsEditor
           interests={interests}
           onChange={setInterests}
-          suggestions={skillSuggestions}
+          suggestions={[
+            ...(resumeText
+              ? suggestInterestsFromResume(resumeText, interests as never)
+              : []),
+            ...skillSuggestions,
+          ]}
         />
       </section>
 

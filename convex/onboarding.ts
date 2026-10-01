@@ -1,5 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+  applyInterestChange,
+  initialKeywordWeights,
+} from "../lib/keywordWeights";
+import { SCORING_CONFIG } from "../lib/scoringConfig";
 import { internal } from "./_generated/api";
 import { mutation } from "./_generated/server";
 import { interestValidator, preferenceValidator } from "./schema";
@@ -69,6 +74,12 @@ export const complete = mutation({
         args.resumeText !== existing.resumeText;
       await ctx.db.patch(existing._id, {
         ...fields,
+        keywordWeights: applyInterestChange(
+          existing.keywordWeights ?? {},
+          existing.interests ?? [],
+          args.interests ?? [],
+          SCORING_CONFIG,
+        ),
         ...(args.resumeText !== undefined
           ? { resumeText: args.resumeText }
           : {}),
@@ -80,6 +91,10 @@ export const complete = mutation({
       await ctx.db.insert("profiles", {
         userId,
         ...fields,
+        keywordWeights: initialKeywordWeights(
+          args.interests ?? [],
+          SCORING_CONFIG,
+        ),
         resumeText: args.resumeText,
       });
     }

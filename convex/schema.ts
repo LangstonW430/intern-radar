@@ -56,6 +56,18 @@ export const preferenceValidator = v.union(
   }),
 );
 
+// Per-user keyword weights (lib/keywordWeights): initial is the anchor from
+// interests or a direct edit; learning moves weight and decays toward it.
+export const keywordWeightsValidator = v.record(
+  v.string(),
+  v.object({
+    weight: v.float64(),
+    initial: v.float64(),
+    source: v.union(v.literal("user"), v.literal("learned")),
+    sightings: v.float64(),
+  }),
+);
+
 export const listingFieldsValidator = {
   sourceId: v.string(),
   company: v.string(),
@@ -217,6 +229,7 @@ export default defineSchema({
     // silently overwritten) and want/avoid interest keywords.
     skills: v.optional(v.array(v.string())),
     interests: v.optional(v.array(interestValidator)),
+    keywordWeights: v.optional(keywordWeightsValidator),
     resumeText: v.optional(v.string()),
     resumeEmbedding: v.optional(v.array(v.float64())),
     preferenceVector: v.optional(v.array(v.float64())),

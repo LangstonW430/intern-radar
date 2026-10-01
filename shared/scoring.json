@@ -1,5 +1,10 @@
 {
   "version": 1,
   "comment": "Constants for the keyword-weight scoring model, shared by TS scoring and offline tooling.",
-  "positionWeights": { "title": 1.5, "qualifications": 1.2, "body": 1.0 }
+  "positionWeights": { "title": 1.5, "qualifications": 1.2, "body": 1.0 },
+  "initialWeights": {
+    "want": { "strong": 1.0, "soft": 0.5 },
+    "avoid": { "strong": -1.5, "soft": -0.75 }
+  },
+  "weightClamp": [-3, 3]
 }

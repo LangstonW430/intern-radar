@@ -1,4 +1,6 @@
 import { v } from "convex/values";
+import { initialKeywordWeights } from "../lib/keywordWeights";
+import { SCORING_CONFIG } from "../lib/scoringConfig";
 import { extractKeywords, VOCABULARY_VERSION } from "../lib/vocabulary";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -56,6 +58,27 @@ export const backfillListingKeywords = internalAction({
     // Incremental stats can't survive a bulk rewrite — recount.
     await ctx.runAction(internal.keywordStats.rebuild, {});
     console.log(`backfillListingKeywords: updated ${updated} listings`);
+  },
+});
+
+/** Gives every profile interest-derived keyword weights. Skips profiles
+ * that already have a map unless forced (force discards learning). */
+export const initKeywordWeights = internalMutation({
+  args: { force: v.optional(v.boolean()) },
+  handler: async (ctx, { force }) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let updated = 0;
+    for (const profile of profiles) {
+      if (profile.keywordWeights !== undefined && !force) continue;
+      await ctx.db.patch(profile._id, {
+        keywordWeights: initialKeywordWeights(
+          profile.interests ?? [],
+          SCORING_CONFIG,
+        ),
+      });
+      updated++;
+    }
+    console.log(`initKeywordWeights: initialized ${updated} profiles`);
   },
 });
 

@@ -1,5 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+  applyInterestChange,
+  removeKeywordWeight as removeKeyword,
+  resetLearnedWeights as resetLearned,
+  setUserWeight,
+} from "../lib/keywordWeights";
+import { SCORING_CONFIG } from "../lib/scoringConfig";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { interestValidator, preferenceValidator } from "./schema";
@@ -110,7 +117,80 @@ export const updateSettings = mutation({
       wildcards: args.wildcards,
       ...(args.subscribed !== undefined ? { subscribed: args.subscribed } : {}),
       ...(args.skills !== undefined ? { skills: args.skills } : {}),
-      ...(args.interests !== undefined ? { interests: args.interests } : {}),
+      ...(args.interests !== undefined
+        ? {
+            interests: args.interests,
+            keywordWeights: applyInterestChange(
+              profile.keywordWeights ?? {},
+              profile.interests ?? [],
+              args.interests,
+              SCORING_CONFIG,
+            ),
+          }
+        : {}),
+    });
+    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+  },
+});
+
+/** Settings edit of one keyword weight: becomes the user's anchor. */
+export const updateKeywordWeight = mutation({
+  args: { keywordId: v.string(), weight: v.number() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not signed in");
+    if (!Number.isFinite(args.weight)) throw new Error("weight must be finite");
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) throw new Error("No profile yet");
+    await ctx.db.patch(profile._id, {
+      keywordWeights: setUserWeight(
+        profile.keywordWeights ?? {},
+        args.keywordId,
+        args.weight,
+        SCORING_CONFIG,
+      ),
+    });
+    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+  },
+});
+
+export const removeKeywordWeight = mutation({
+  args: { keywordId: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not signed in");
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) throw new Error("No profile yet");
+    await ctx.db.patch(profile._id, {
+      keywordWeights: removeKeyword(
+        profile.keywordWeights ?? {},
+        args.keywordId,
+      ),
+    });
+    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+  },
+});
+
+/** Discards everything feedback has learned: weights return to their
+ * anchors and learned-only keywords disappear. */
+export const resetLearnedWeights = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not signed in");
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) throw new Error("No profile yet");
+    await ctx.db.patch(profile._id, {
+      keywordWeights: resetLearned(profile.keywordWeights ?? {}),
     });
     await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
   },

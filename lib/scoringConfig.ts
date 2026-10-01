@@ -14,6 +14,13 @@ const scoringConfigSchema = z.object({
     qualifications: z.number().positive(),
     body: z.number().positive(),
   }),
+  // Keyword initial weights from interests; avoid is deliberately stronger
+  // than want. Hard interests stay in the filters, ignore contributes nothing.
+  initialWeights: z.object({
+    want: z.object({ strong: z.number(), soft: z.number() }),
+    avoid: z.object({ strong: z.number(), soft: z.number() }),
+  }),
+  weightClamp: z.tuple([z.number(), z.number()]),
 });
 
 export type ScoringConfig = z.infer<typeof scoringConfigSchema>;

@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Header from "@/components/Header";
 import InterestsEditor, { type InterestItem } from "@/components/InterestsEditor";
+import KeywordWeightsEditor from "@/components/KeywordWeightsEditor";
 import SkillsEditor from "@/components/SkillsEditor";
+import { suggestInterestsFromResume } from "@/lib/profileSkills";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 
@@ -150,7 +152,23 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
 
       <section className="mb-6 flex flex-col gap-3">
         <h2 className="font-medium">Interests</h2>
-        <InterestsEditor interests={interests} onChange={setInterests} />
+        <InterestsEditor
+          interests={interests}
+          onChange={setInterests}
+          suggestions={
+            profile.resumeText
+              ? suggestInterestsFromResume(
+                  profile.resumeText,
+                  interests as never,
+                )
+              : []
+          }
+        />
+      </section>
+
+      <section className="mb-6 flex flex-col gap-3">
+        <h2 className="font-medium">Keyword weights</h2>
+        <KeywordWeightsEditor weights={profile.keywordWeights ?? {}} />
       </section>
 
       <section className="mb-6 flex flex-col gap-3">
