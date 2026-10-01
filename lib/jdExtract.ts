@@ -78,6 +78,16 @@ export interface JdSections {
   responsibilities: string[];
 }
 
+// An ALL-CAPS short line ("WHY YOU'LL LOVE IT HERE") is some other section's
+// heading — it ends the current section even though we don't classify it.
+function isUnknownHeading(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_HEADING_LENGTH) return false;
+  if (/^[-–—•·*▪◦]/.test(trimmed)) return false;
+  const letters = trimmed.replace(/[^a-zA-Z]/g, "");
+  return letters.length >= 4 && letters === letters.toUpperCase();
+}
+
 export function splitSections(jdText: string): JdSections {
   const sections: JdSections = {
     requirements: [],
@@ -89,6 +99,10 @@ export function splitSections(jdText: string): JdSections {
     const type = headingType(rawLine);
     if (type) {
       current = type;
+      continue;
+    }
+    if (isUnknownHeading(rawLine)) {
+      current = null;
       continue;
     }
     if (!current) continue;

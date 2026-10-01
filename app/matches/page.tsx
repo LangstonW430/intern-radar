@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import Header from "@/components/Header";
+import MatchDetail from "@/components/MatchDetail";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -33,6 +34,7 @@ function MatchesContent() {
     useState<Id<"listings"> | null>(
       (searchParams.get("prompt") as Id<"listings"> | null) ?? null,
     );
+  const [expandedId, setExpandedId] = useState<Id<"listings"> | null>(null);
 
   async function give(listingId: Id<"listings">, kind: FeedbackKind) {
     await record({ listingId, kind });
@@ -116,6 +118,16 @@ function MatchesContent() {
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-sm">
                   <button
+                    onClick={() =>
+                      setExpandedId(
+                        expandedId === m.listingId ? null : m.listingId,
+                      )
+                    }
+                    className="rounded border border-neutral-300 px-2 py-1"
+                  >
+                    {expandedId === m.listingId ? "Hide details" : "Details"}
+                  </button>
+                  <button
                     onClick={() => void give(m.listingId, "applied")}
                     disabled={applied}
                     className="rounded border border-neutral-300 px-2 py-1 disabled:bg-neutral-900 disabled:text-white"
@@ -154,6 +166,9 @@ function MatchesContent() {
                     </span>
                   )}
                 </div>
+                {expandedId === m.listingId && (
+                  <MatchDetail listingId={m.listingId} />
+                )}
               </li>
             );
           })}

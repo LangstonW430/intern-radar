@@ -44,6 +44,18 @@ describe("splitSections", () => {
     expect(s).toEqual({ requirements: [], preferred: [], responsibilities: [] });
   });
 
+  it("an unrecognized ALL-CAPS heading ends the current section", () => {
+    const s = splitSections(
+      [
+        "Preferred Qualifications",
+        "- Kubernetes experience",
+        "WHY YOU'LL LOVE IT HERE",
+        "Free snacks and a great culture.",
+      ].join("\n"),
+    );
+    expect(s.preferred).toEqual(["Kubernetes experience"]);
+  });
+
   it("ignores long prose lines that merely contain heading words", () => {
     const prose =
       "Our requirements are constantly evolving as the team grows and the responsibilities of the role shift over time, and this line is far too long to be a heading.";
