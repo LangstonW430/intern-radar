@@ -3,8 +3,11 @@
 import { useAction, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import InterestsEditor, { type InterestItem } from "@/components/InterestsEditor";
+import SkillsEditor from "@/components/SkillsEditor";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { mergeSkillSuggestions } from "@/lib/profileSkills";
 
 const STRENGTHS = ["hard", "strong", "soft", "ignore"] as const;
 type Strength = (typeof STRENGTHS)[number];
@@ -48,6 +51,9 @@ export default function OnboardingPage() {
 
   const [resumeText, setResumeText] = useState<string | null>(null);
   const [resumeStatus, setResumeStatus] = useState<string | null>(null);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
+  const [interests, setInterests] = useState<InterestItem[]>([]);
 
   const [gradDate, setGradDate] = useState("");
   const [classYear, setClassYear] = useState("sophomore");
@@ -93,8 +99,13 @@ export default function OnboardingPage() {
       setResumeStatus("Reading your resume…");
       const result = await processResume({ storageId });
       setResumeText(result.resumeText);
+      // Prefill = merge, never replace: anything already added stays.
+      setSkills((current) =>
+        mergeSkillSuggestions(current, result.detectedSkills),
+      );
+      setSkillSuggestions(result.detectedSkills);
       setResumeStatus(
-        `Got it — ${result.resumeText.length} characters extracted. The PDF itself has been deleted.`,
+        `Got it — ${result.resumeText.length} characters extracted, ${result.detectedSkills.length} skills detected. The PDF itself has been deleted.`,
       );
     } catch (err) {
       setResumeStatus(null);
@@ -148,6 +159,8 @@ export default function OnboardingPage() {
             strength: "hard",
           },
         ] as never,
+        skills,
+        interests: interests as never,
         threshold,
         frequency,
         wildcards,
@@ -348,7 +361,29 @@ export default function OnboardingPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-medium">4. Email digest</h2>
+        <h2 className="font-medium">4. Skills</h2>
+        <p className="text-xs text-neutral-500">
+          Matched against each job&apos;s requirement sections. Prefilled from
+          your resume; edit freely.
+        </p>
+        <SkillsEditor
+          skills={skills}
+          onChange={setSkills}
+          suggestions={skillSuggestions}
+        />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-medium">5. Interests (optional)</h2>
+        <InterestsEditor
+          interests={interests}
+          onChange={setInterests}
+          suggestions={skillSuggestions}
+        />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-medium">6. Email digest</h2>
         <label className="flex items-center justify-between text-sm">
           Frequency
           <select

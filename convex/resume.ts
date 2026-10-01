@@ -25,7 +25,9 @@ export const processResume = action({
       if (!cleaned) {
         throw new Error("No extractable text found in that PDF");
       }
-      return { resumeText: cleaned.slice(0, 50_000) };
+      const resumeText = cleaned.slice(0, 50_000);
+      const { extractSkills } = await import("../lib/jdExtract");
+      return { resumeText, detectedSkills: extractSkills(resumeText) };
     } finally {
       // The PDF is gone whether extraction succeeded or not.
       await ctx.storage.delete(storageId);

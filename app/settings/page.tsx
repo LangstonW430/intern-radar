@@ -5,6 +5,8 @@ import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Header from "@/components/Header";
+import InterestsEditor, { type InterestItem } from "@/components/InterestsEditor";
+import SkillsEditor from "@/components/SkillsEditor";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 
@@ -60,6 +62,10 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
   const [frequency, setFrequency] = useState(profile.frequency);
   const [wildcards, setWildcards] = useState(profile.wildcards);
   const [subscribed, setSubscribed] = useState(profile.subscribed !== false);
+  const [skills, setSkills] = useState<string[]>(profile.skills ?? []);
+  const [interests, setInterests] = useState<InterestItem[]>(
+    (profile.interests as InterestItem[] | undefined) ?? [],
+  );
   const [status, setStatus] = useState<string | null>(null);
 
   async function handleSave() {
@@ -71,6 +77,8 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
         frequency,
         wildcards,
         subscribed,
+        skills,
+        interests: interests as never,
       });
       setStatus("Saved. Matches are being re-scored.");
     } catch (err) {
@@ -133,6 +141,16 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="mb-6 flex flex-col gap-3">
+        <h2 className="font-medium">Skills</h2>
+        <SkillsEditor skills={skills} onChange={setSkills} />
+      </section>
+
+      <section className="mb-6 flex flex-col gap-3">
+        <h2 className="font-medium">Interests</h2>
+        <InterestsEditor interests={interests} onChange={setInterests} />
       </section>
 
       <section className="mb-6 flex flex-col gap-3">

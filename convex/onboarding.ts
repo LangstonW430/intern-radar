@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation } from "./_generated/server";
-import { preferenceValidator } from "./schema";
+import { interestValidator, preferenceValidator } from "./schema";
 
 export const generateResumeUploadUrl = mutation({
   args: {},
@@ -19,6 +19,8 @@ export const complete = mutation({
     classYear: v.string(),
     degreeLevel: v.string(),
     preferences: v.array(preferenceValidator),
+    skills: v.optional(v.array(v.string())),
+    interests: v.optional(v.array(interestValidator)),
     threshold: v.number(),
     frequency: v.union(
       v.literal("instant"),
@@ -49,6 +51,8 @@ export const complete = mutation({
       classYear: args.classYear,
       degreeLevel: args.degreeLevel,
       preferences: args.preferences,
+      skills: args.skills ?? [],
+      interests: args.interests ?? [],
       threshold: args.threshold,
       frequency: args.frequency,
       wildcards: args.wildcards,

@@ -37,6 +37,15 @@ export const classYearSchema = z.enum([
 
 export const degreeLevelSchema = z.enum(["bachelors", "masters", "phd"]);
 
+/** A user-entered interest keyword: want it or avoid it, with the same
+ * strength semantics as other preferences. */
+export const interestSchema = z.object({
+  keyword: z.string().min(1).max(60),
+  tag: z.enum(["want", "avoid"]),
+  strength: strengthSchema,
+});
+export type Interest = z.infer<typeof interestSchema>;
+
 export const preferenceSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("location"),

@@ -9,6 +9,12 @@ export const strengthValidator = v.union(
   v.literal("ignore"),
 );
 
+export const interestValidator = v.object({
+  keyword: v.string(),
+  tag: v.union(v.literal("want"), v.literal("avoid")),
+  strength: strengthValidator,
+});
+
 export const preferenceValidator = v.union(
   v.object({
     type: v.literal("location"),
@@ -195,6 +201,10 @@ export default defineSchema({
     classYear: v.string(),
     degreeLevel: v.string(),
     preferences: v.array(preferenceValidator),
+    // User-editable skill chips (prefilled from the resume, merged, never
+    // silently overwritten) and want/avoid interest keywords.
+    skills: v.optional(v.array(v.string())),
+    interests: v.optional(v.array(interestValidator)),
     resumeText: v.optional(v.string()),
     resumeEmbedding: v.optional(v.array(v.float64())),
     preferenceVector: v.optional(v.array(v.float64())),
