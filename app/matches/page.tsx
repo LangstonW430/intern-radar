@@ -2,18 +2,30 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "@/components/Header";
 import MatchDetail from "@/components/MatchDetail";
+import MatchFilterBar from "@/components/MatchFilterBar";
+import MatchRow, { type FeedbackKind } from "@/components/MatchRow";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import {
+  applyMatchFilters,
+  DEFAULT_MATCH_FILTERS,
+  type MatchFilterState,
+} from "@/lib/matchFilters";
 
-type FeedbackKind =
-  | "applied"
-  | "thumbs_up"
-  | "thumbs_down"
-  | "good_suggestion"
-  | "bad_suggestion";
+const PAGE_SIZE = 50;
+// Age labels are relative to page load; they don't need to tick live.
+const NOW = Date.now();
 
 export default function MatchesPage() {
   return (
@@ -35,144 +47,141 @@ function MatchesContent() {
       (searchParams.get("prompt") as Id<"listings"> | null) ?? null,
     );
   const [expandedId, setExpandedId] = useState<Id<"listings"> | null>(null);
+  const [filters, setFilters] = useState<MatchFilterState>(
+    DEFAULT_MATCH_FILTERS,
+  );
+  // Optimistic overlay: feedback applied locally the instant it's clicked.
+  const [localFeedback, setLocalFeedback] = useState<Record<string, string[]>>(
+    {},
+  );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  async function give(listingId: Id<"listings">, kind: FeedbackKind) {
-    await record({ listingId, kind });
-    if (kind === "applied") {
-      setSuggestionPromptFor(listingId);
-    }
+  const rows = useMemo(() => {
+    if (!matches) return [];
+    const merged = matches.map((m) => ({
+      ...m,
+      myFeedback: [
+        ...new Set([...m.myFeedback, ...(localFeedback[m.listingId] ?? [])]),
+      ],
+    }));
+    return applyMatchFilters(merged, filters);
+  }, [matches, localFeedback, filters]);
+
+  const visible = rows.slice(0, visibleCount);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setVisibleCount((count) => count + PAGE_SIZE);
+      }
+    });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [rows.length]);
+
+  function give(listingId: Id<"listings">, kind: FeedbackKind) {
+    setLocalFeedback((prev) => ({
+      ...prev,
+      [listingId]: [...new Set([...(prev[listingId] ?? []), kind])],
+    }));
+    if (kind === "applied") setSuggestionPromptFor(listingId);
     if (kind === "good_suggestion" || kind === "bad_suggestion") {
       setSuggestionPromptFor(null);
     }
+    record({ listingId, kind }).catch(() => {
+      // Roll the optimistic mark back if the write failed.
+      setLocalFeedback((prev) => ({
+        ...prev,
+        [listingId]: (prev[listingId] ?? []).filter((k) => k !== kind),
+      }));
+    });
   }
 
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="mx-auto max-w-3xl p-6">
-        <h1 className="mb-4 text-xl font-semibold">Your matches</h1>
+      <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+        <div className="mb-5 flex items-baseline justify-between gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">Matches</h1>
+          {matches !== undefined && matches.length > 0 && (
+            <p className="text-xs text-muted">
+              {rows.length} of your top {matches.length}
+            </p>
+          )}
+        </div>
+
         {profile === null && (
-          <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm">
+          <div className="mb-5 rounded-lg border border-hairline bg-surface p-4 text-sm">
             Finish setting up your profile to get matches:{" "}
-            <a href="/onboarding" className="font-medium underline">
+            <a href="/onboarding" className="font-medium text-accent hover:underline">
               complete onboarding
             </a>
             .
           </div>
         )}
-        {matches === undefined && (
-          <p className="text-neutral-500">Loading…</p>
-        )}
-        {matches !== undefined && matches.length === 0 && (
-          <p className="text-neutral-500">
-            No matches yet — they appear once listings are ingested and scored.
-          </p>
-        )}
-        <ul className="flex flex-col gap-4">
-          {matches?.map((m) => {
-            const applied = m.myFeedback.includes("applied");
-            const up = m.myFeedback.includes("thumbs_up");
-            const down = m.myFeedback.includes("thumbs_down");
-            return (
-              <li
-                key={m.matchId}
-                className="rounded-lg border border-neutral-200 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <a
-                      href={m.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium hover:underline"
-                    >
-                      {m.title}
-                    </a>
-                    <p className="text-sm text-neutral-600">
-                      {m.company} · {m.locations.join(" · ")}
-                    </p>
-                  </div>
-                  <span className="rounded bg-neutral-100 px-2 py-1 text-sm tabular-nums">
-                    {(m.score * 100).toFixed(0)}
-                  </span>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                  {m.topFactors.map((f) => (
-                    <span
-                      key={f}
-                      className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700"
-                    >
-                      {f}
-                    </span>
-                  ))}
-                  {!m.hasJd && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
-                      Couldn&apos;t read job description
-                    </span>
-                  )}
-                  {m.exploration && (
-                    <span className="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">
-                      Wildcard
-                    </span>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-sm">
-                  <button
-                    onClick={() =>
+
+        {matches === undefined ? (
+          <div className="flex flex-col gap-6 pt-2" aria-busy>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-6 w-5/6" />
+              </div>
+            ))}
+          </div>
+        ) : matches.length === 0 ? (
+          <EmptyState
+            title="No matches yet"
+            hint="The radar checks for new listings hourly — matches appear here once listings are ingested and scored against your profile."
+          />
+        ) : (
+          <>
+            <MatchFilterBar filters={filters} onChange={setFilters} />
+            {rows.length === 0 ? (
+              <EmptyState
+                title="Nothing matches these filters"
+                hint="Loosen the score threshold or clear the search to see more."
+              />
+            ) : (
+              <ul className="mt-2 flex flex-col divide-y divide-hairline">
+                {visible.map((m) => (
+                  <MatchRow
+                    key={m.matchId}
+                    row={m}
+                    feedback={m.myFeedback}
+                    now={NOW}
+                    expanded={expandedId === m.listingId}
+                    suggestionPrompt={suggestionPromptFor === m.listingId}
+                    onToggleDetails={() =>
                       setExpandedId(
-                        expandedId === m.listingId ? null : m.listingId,
+                        expandedId === m.listingId
+                          ? null
+                          : (m.listingId as Id<"listings">),
                       )
                     }
-                    className="rounded border border-neutral-300 px-2 py-1"
+                    onFeedback={(kind) =>
+                      give(m.listingId as Id<"listings">, kind)
+                    }
                   >
-                    {expandedId === m.listingId ? "Hide details" : "Details"}
-                  </button>
-                  <button
-                    onClick={() => void give(m.listingId, "applied")}
-                    disabled={applied}
-                    className="rounded border border-neutral-300 px-2 py-1 disabled:bg-neutral-900 disabled:text-white"
-                  >
-                    {applied ? "Applied ✓" : "Applied"}
-                  </button>
-                  <button
-                    onClick={() => void give(m.listingId, "thumbs_up")}
-                    className={`rounded border px-2 py-1 ${up ? "border-emerald-600 bg-emerald-50" : "border-neutral-300"}`}
-                    aria-label="Thumbs up"
-                  >
-                    👍
-                  </button>
-                  <button
-                    onClick={() => void give(m.listingId, "thumbs_down")}
-                    className={`rounded border px-2 py-1 ${down ? "border-red-600 bg-red-50" : "border-neutral-300"}`}
-                    aria-label="Thumbs down"
-                  >
-                    👎
-                  </button>
-                  {suggestionPromptFor === m.listingId && (
-                    <span className="ml-2 flex items-center gap-2">
-                      Was this a good suggestion?
-                      <button
-                        onClick={() => void give(m.listingId, "good_suggestion")}
-                        className="rounded border border-neutral-300 px-2 py-1"
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => void give(m.listingId, "bad_suggestion")}
-                        className="rounded border border-neutral-300 px-2 py-1"
-                      >
-                        No
-                      </button>
-                    </span>
-                  )}
-                </div>
-                {expandedId === m.listingId && (
-                  <MatchDetail listingId={m.listingId} />
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                    <MatchDetail listingId={m.listingId as Id<"listings">} />
+                  </MatchRow>
+                ))}
+              </ul>
+            )}
+            <div ref={sentinelRef} />
+            {rows.length > 0 && (
+              <p className="pb-6 pt-4 text-center text-xs text-muted">
+                {visible.length < rows.length
+                  ? "Loading more…"
+                  : `Showing ${rows.length} from your top ${matches.length} matches by score.`}
+              </p>
+            )}
+          </>
+        )}
       </main>
     </div>
   );

@@ -15,7 +15,10 @@ export const list = query({
   handler: async (ctx, { limit }) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) return [];
-    const max = Math.min(limit ?? 50, 100);
+    // The top-scored window. Dropped matches score exactly 0, so the
+    // descending index yields live rows first; reading much deeper would
+    // blow the per-query read budget on listings' JD text.
+    const max = Math.min(limit ?? 300, 300);
 
     const feedback = await ctx.db
       .query("feedback")
@@ -32,7 +35,7 @@ export const list = query({
       .query("matches")
       .withIndex("by_user_score", (q) => q.eq("userId", userId))
       .order("desc")
-      .take(300);
+      .take(330);
 
     const rows = [];
     for (const match of matches) {
@@ -48,7 +51,9 @@ export const list = query({
         url: listing.url,
         locations: listing.locations,
         score: match.score,
-        hasJd: listing.jdStatus === "fetched",
+        jdStatus: listing.jdStatus,
+        category: listing.category,
+        remoteType: listing.remoteType,
         datePosted: listing.datePosted,
         exploration: match.exploration,
         topFactors: topPositiveFactors(match.breakdown),
@@ -144,6 +149,7 @@ export const detail = query({
     return {
       url: listing.url,
       hasJd,
+      jdStatus: listing.jdStatus,
       matchedSkills,
       missingRequired,
       preferredSkills,
