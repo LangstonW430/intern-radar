@@ -21,31 +21,6 @@ export const jdImportSchema = z.object({
 });
 export type JdImport = z.infer<typeof jdImportSchema>;
 
-/** One training row in the /ml/export?kind=training payload — one per
- * (userId, listingId), pre-aggregated by lib/feedbackAggregate. */
-export const trainingRowSchema = z.object({
-  userId: z.string(),
-  listingId: z.string(),
-  y: z.union([z.literal(0), z.literal(1)]),
-  weight: z.number().positive(),
-  split: z.enum(["train", "eval"]),
-  source: z.enum(["label", "feedback"]),
-  kind: z.string(),
-  exploration: z.boolean(),
-  features: z.record(z.string(), z.number()).nullable(),
-});
-export type TrainingRow = z.infer<typeof trainingRowSchema>;
-
-export const modelImportSchema = z.object({
-  featureNames: z.array(z.string()).min(1),
-  globalWeights: z.array(z.number()).min(1),
-  userWeights: z
-    .array(z.object({ userId: z.string(), weights: z.array(z.number()) }))
-    .default([]),
-  metrics: z.record(z.string(), z.unknown()),
-});
-export type ModelImport = z.infer<typeof modelImportSchema>;
-
 export const labelsImportSchema = z.object({
   email: z.email(),
   items: z

@@ -95,28 +95,6 @@ class ConvexClient:
             applied += res.json().get("applied", 0)
         return applied
 
-    def export_training(self) -> dict[str, Any]:
-        return self._request("GET", "/ml/export", params={"kind": "training"}).json()
-
-    def import_model(
-        self,
-        feature_names: list[str],
-        global_weights: list[float],
-        user_weights: list[dict[str, Any]],
-        metrics: dict[str, Any],
-    ) -> dict[str, Any]:
-        res = self._request(
-            "POST",
-            "/ml/import/model",
-            json={
-                "featureNames": feature_names,
-                "globalWeights": global_weights,
-                "userWeights": user_weights,
-                "metrics": metrics,
-            },
-        )
-        return res.json()
-
     def import_embeddings(
         self,
         items: list[dict[str, Any]],

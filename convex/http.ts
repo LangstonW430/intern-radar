@@ -3,7 +3,6 @@ import {
   embeddingsImportSchema,
   jdImportSchema,
   labelsImportSchema,
-  modelImportSchema,
 } from "../lib/schemas/mlPayloads";
 import { z } from "zod";
 import { verifyFeedbackToken } from "../lib/feedbackToken";
@@ -99,9 +98,6 @@ http.route({
       return json(
         await ctx.runQuery(internal.ml.exportJdTexts, { paginationOpts }),
       );
-    }
-    if (kind === "training") {
-      return json(await ctx.runQuery(internal.ml.exportTraining, {}));
     }
     if (kind === "resumes") {
       return json({
@@ -359,22 +355,6 @@ http.route({
     return payload.kind === "applied"
       ? redirect(`fb=ok&prompt=${payload.listingId}`)
       : redirect("fb=ok");
-  }),
-});
-
-http.route({
-  path: "/ml/import/model",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    if (!isAuthorized(request)) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    const parsed = modelImportSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return json({ issues: parsed.error.issues }, 400);
-    }
-    const result = await ctx.runMutation(internal.ml.importModel, parsed.data);
-    return json(result);
   }),
 });
 

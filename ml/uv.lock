@@ -331,7 +331,6 @@ source = { editable = "." }
 dependencies = [
     { name = "fastembed" },
     { name = "httpx" },
-    { name = "numpy" },
 ]
 
 [package.dev-dependencies]
@@ -343,7 +342,6 @@ dev = [
 requires-dist = [
     { name = "fastembed", specifier = ">=0.8.1" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "numpy", specifier = ">=2.5.3" },
 ]
 
 [package.metadata.requires-dev]

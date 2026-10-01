@@ -1,7 +1,7 @@
 [project]
 name = "intern-radar-ml"
 version = "0.1.0"
-description = "JD fetching, embedding, and per-user model training for intern-radar"
+description = "JD fetching and embedding for intern-radar"
 readme = "README.md"
 authors = [
     { name = "langston", email = "langstonw430@gmail.com" }
@@ -10,7 +10,6 @@ requires-python = ">=3.12"
 dependencies = [
     "fastembed>=0.8.1",
     "httpx>=0.28.1",
-    "numpy>=2.5.3",
 ]
 
 [dependency-groups]
