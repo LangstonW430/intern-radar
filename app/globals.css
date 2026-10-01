@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
+/* Design tokens — the only place colors are defined. Components consume
+   them through Tailwind utilities (bg-canvas, text-ink, border-hairline…). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #fafaf9;
+  --surface: #ffffff;
+  --hairline: #e7e5e4;
+  --ink: #1c1917;
+  --muted: #78716c;
+  --accent: #0d9488;
+  --accent-contrast: #ffffff;
+  --pos: #15803d;
+  --pos-tint: rgb(21 128 61 / 0.08);
+  --neg: #b91c1c;
+  --neg-tint: rgb(185 28 28 / 0.08);
+  --warn: #a16207;
+  --warn-tint: rgb(161 98 7 / 0.1);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --canvas: #121110;
+  --surface: #1c1a19;
+  --hairline: #2a2725;
+  --ink: #e7e5e4;
+  --muted: #a8a29e;
+  --accent: #2dd4bf;
+  --accent-contrast: #0f1211;
+  --pos: #34d399;
+  --pos-tint: rgb(52 211 153 / 0.12);
+  --neg: #f87171;
+  --neg-tint: rgb(248 113 113 / 0.12);
+  --warn: #fbbf24;
+  --warn-tint: rgb(251 191 36 / 0.12);
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-hairline: var(--hairline);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-pos: var(--pos);
+  --color-pos-tint: var(--pos-tint);
+  --color-neg: var(--neg);
+  --color-neg-tint: var(--neg-tint);
+  --color-warn: var(--warn);
+  --color-warn-tint: var(--warn-tint);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
