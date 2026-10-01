@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "comment": "Constants for the keyword-weight scoring model, shared by TS scoring and offline tooling.",
+  "positionWeights": { "title": 1.5, "qualifications": 1.2, "body": 1.0 }
+}

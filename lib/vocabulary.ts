@@ -1,6 +1,7 @@
 import { z } from "zod";
 import vocabularyJson from "../shared/vocabulary.json";
-import { aliasPattern } from "./jdExtract";
+import { aliasPattern, splitSections } from "./jdExtract";
+import { SCORING_CONFIG } from "./scoringConfig";
 
 /**
  * The keyword vocabulary for the per-user keyword-weight model.
@@ -57,6 +58,36 @@ export function matchVocabulary(text: string): Set<string> {
     }
   }
   return found;
+}
+
+/**
+ * Vocabulary keywords present in a listing, each with its position weight:
+ * title > requirements/preferred ("qualifications") sections > anywhere in
+ * the body; a keyword found in several places keeps the max. Listings
+ * without a JD get title-only keywords.
+ */
+export function extractKeywords(
+  title: string,
+  jdText?: string | null,
+): Record<string, number> {
+  const pos = SCORING_CONFIG.positionWeights;
+  const out: Record<string, number> = {};
+  const add = (ids: Set<string>, weight: number) => {
+    for (const id of ids) out[id] = Math.max(out[id] ?? 0, weight);
+  };
+  if (jdText) {
+    add(matchVocabulary(jdText), pos.body);
+    const sections = splitSections(jdText);
+    const qualifications = [
+      ...sections.requirements,
+      ...sections.preferred,
+    ].join("\n");
+    if (qualifications) {
+      add(matchVocabulary(qualifications), pos.qualifications);
+    }
+  }
+  add(matchVocabulary(title), pos.title);
+  return out;
 }
 
 const ALIAS_TO_ID: ReadonlyMap<string, string> = (() => {

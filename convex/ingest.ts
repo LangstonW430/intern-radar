@@ -7,6 +7,7 @@ import {
   toListingSourceFields,
 } from "../lib/listingDoc";
 import { inScope, parseListingsFeed } from "../lib/schemas/simplify";
+import { extractKeywords, VOCABULARY_VERSION } from "../lib/vocabulary";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -15,6 +16,11 @@ import {
   internalQuery,
 } from "./_generated/server";
 import { fetchListingsJson, getLatestListingsSha } from "./lib/github";
+import {
+  applyStatsTransitions,
+  listingContribution,
+  type StatsTransition,
+} from "./keywordStats";
 import { listingFieldsValidator } from "./schema";
 
 const BATCH_SIZE = 50;
@@ -135,6 +141,7 @@ export const upsertBatch = internalMutation({
   },
   handler: async (ctx, { items, now }) => {
     const touched: Id<"listings">[] = [];
+    const transitions: StatsTransition[] = [];
     for (const item of items) {
       const existing = await ctx.db
         .query("listings")
@@ -149,6 +156,8 @@ export const upsertBatch = internalMutation({
             jdAttempts: 0,
             ingestedAt: now,
             embedPending: true,
+            keywords: extractKeywords(item.title, null),
+            keywordsVersion: VOCABULARY_VERSION,
           }),
         );
         continue;
@@ -159,14 +168,36 @@ export const upsertBatch = internalMutation({
         existing.title !== item.title ||
         existing.company !== item.company ||
         existing.category !== item.category;
+      // A URL change invalidates the fetched JD, so keywords fall back to
+      // title-only until the new JD arrives; a title change re-extracts.
+      const keywords = urlChanged
+        ? extractKeywords(item.title, null)
+        : titleChanged
+          ? extractKeywords(
+              item.title,
+              existing.jdStatus === "fetched" ? existing.jdText : null,
+            )
+          : existing.keywords;
+      const nextJdStatus = urlChanged
+        ? isJdSupported(item.atsType)
+          ? ("pending" as const)
+          : ("unsupported" as const)
+        : existing.jdStatus;
+      transitions.push({
+        before: listingContribution(existing),
+        after: {
+          contributes: item.active && nextJdStatus === "fetched",
+          keywordIds: Object.keys(keywords ?? {}),
+        },
+      });
       await ctx.db.patch(existing._id, {
         ...item,
+        keywords,
+        keywordsVersion: VOCABULARY_VERSION,
         // The JD lives at the URL; only a URL change makes it stale.
         ...(urlChanged
           ? {
-              jdStatus: isJdSupported(item.atsType)
-                ? ("pending" as const)
-                : ("unsupported" as const),
+              jdStatus: nextJdStatus,
               jdAttempts: 0,
               jdError: undefined,
               jdSource: undefined,
@@ -178,6 +209,7 @@ export const upsertBatch = internalMutation({
       });
       touched.push(existing._id);
     }
+    await applyStatsTransitions(ctx, transitions);
     if (touched.length > 0) {
       await ctx.scheduler.runAfter(0, internal.scoring.scoreListingsForUsers, {
         listingIds: touched,
@@ -250,15 +282,21 @@ export const patchGeoBatch = internalMutation({
 export const deactivateBatch = internalMutation({
   args: { sourceIds: v.array(v.string()) },
   handler: async (ctx, { sourceIds }) => {
+    const transitions: StatsTransition[] = [];
     for (const sourceId of sourceIds) {
       const existing = await ctx.db
         .query("listings")
         .withIndex("by_sourceId", (q) => q.eq("sourceId", sourceId))
         .unique();
       if (existing && existing.active) {
+        transitions.push({
+          before: listingContribution(existing),
+          after: { contributes: false, keywordIds: [] },
+        });
         await ctx.db.patch(existing._id, { active: false });
       }
     }
+    await applyStatsTransitions(ctx, transitions);
   },
 });
 

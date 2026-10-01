@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { SCORING_CONFIG } from "./scoringConfig";
 import {
   CATEGORIES,
   canonicalizeKeyword,
   customKeywordId,
+  extractKeywords,
   isCustomKeywordId,
   keywordDisplayName,
   keywordIdForInterest,
@@ -60,6 +62,37 @@ describe("canonicalizeKeyword", () => {
 
   it("returns null for unknown terms", () => {
     expect(canonicalizeKeyword("underwater basket weaving")).toBeNull();
+  });
+});
+
+describe("extractKeywords", () => {
+  const pos = SCORING_CONFIG.positionWeights;
+  const jd = [
+    "We build data pipelines in the cloud.",
+    "Requirements:",
+    "- Experience with Python",
+    "- Familiarity with Kafka",
+    "Nice to have:",
+    "- Terraform",
+  ].join("\n");
+
+  it("weights title above qualifications above body", () => {
+    const keywords = extractKeywords("Machine Learning Intern", jd);
+    expect(keywords["machine-learning"]).toBe(pos.title);
+    expect(keywords["python"]).toBe(pos.qualifications);
+    expect(keywords["kafka"]).toBe(pos.qualifications);
+    expect(keywords["terraform"]).toBe(pos.qualifications); // preferred section
+    expect(keywords["data-engineering"]).toBe(pos.body);
+  });
+
+  it("keeps the max when a keyword appears in several places", () => {
+    const keywords = extractKeywords("Python Developer Intern", jd);
+    expect(keywords["python"]).toBe(pos.title);
+  });
+
+  it("uses the title alone when there is no JD", () => {
+    const keywords = extractKeywords("Backend Engineering Intern", null);
+    expect(keywords).toEqual({ backend: pos.title });
   });
 });
 

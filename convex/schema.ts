@@ -105,6 +105,10 @@ export default defineSchema({
     embedPending: v.boolean(),
     embedding: v.optional(v.array(v.float64())),
     embeddingVersion: v.optional(v.string()),
+    // Vocabulary keyword id → position weight (lib/vocabulary extractKeywords).
+    // Shaped by the vocabulary version; recomputed by migrate:backfillListingKeywords.
+    keywords: v.optional(v.record(v.string(), v.float64())),
+    keywordsVersion: v.optional(v.number()),
   })
     .index("by_sourceId", ["sourceId"])
     .index("by_active", ["active"])
@@ -119,6 +123,14 @@ export default defineSchema({
       v.object({ sourceId: v.string(), contentHash: v.string() }),
     ),
   }).index("by_chunk", ["chunk"]),
+
+  // Single-document table: document frequency per vocabulary keyword over
+  // active listings with a fetched JD, updated incrementally on JD import,
+  // re-ingest, and deactivation. Read once per scoring batch for IDF.
+  keywordStats: defineTable({
+    totalWithJd: v.number(),
+    df: v.record(v.string(), v.float64()),
+  }),
 
   ingestState: defineTable({
     lastCommitSha: v.optional(v.string()),

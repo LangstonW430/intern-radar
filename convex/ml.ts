@@ -4,6 +4,7 @@ import { FEATURE_NAMES, FEATURES_FILE, priorWeights } from "../lib/features";
 import { aggregateTrainingRows } from "../lib/feedbackAggregate";
 import { buildJdExtract, JD_EXTRACT_VERSION } from "../lib/jdExtract";
 import type { TrainingRow } from "../lib/schemas/mlPayloads";
+import { extractKeywords, VOCABULARY_VERSION } from "../lib/vocabulary";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -11,6 +12,11 @@ import {
   internalMutation,
   internalQuery,
 } from "./_generated/server";
+import {
+  applyStatsTransitions,
+  listingContribution,
+  type StatsTransition,
+} from "./keywordStats";
 
 const MAX_JD_ATTEMPTS = 5;
 
@@ -256,12 +262,21 @@ export const importJdBatch = internalMutation({
     const now = Date.now();
     let applied = 0;
     const rescore: Id<"listings">[] = [];
+    const transitions: StatsTransition[] = [];
     for (const item of items) {
       const id = ctx.db.normalizeId("listings", item.listingId);
       if (!id) continue;
       const listing = await ctx.db.get(id);
       if (!listing) continue;
       if (item.jdStatus === "fetched") {
+        const keywords = extractKeywords(listing.title, item.jdText ?? null);
+        transitions.push({
+          before: listingContribution(listing),
+          after: {
+            contributes: listing.active,
+            keywordIds: Object.keys(keywords),
+          },
+        });
         await ctx.db.patch(id, {
           jdStatus: "fetched",
           jdSource: item.jdSource,
@@ -269,6 +284,8 @@ export const importJdBatch = internalMutation({
           jdExtract: item.jdText ? buildJdExtract(item.jdText) : undefined,
           jdFetchedAt: now,
           jdError: undefined,
+          keywords,
+          keywordsVersion: VOCABULARY_VERSION,
           // The embedding text just changed from title-only to full JD.
           embedPending: true,
         });
@@ -288,6 +305,7 @@ export const importJdBatch = internalMutation({
       }
       applied++;
     }
+    await applyStatsTransitions(ctx, transitions);
     if (rescore.length > 0) {
       await ctx.scheduler.runAfter(0, internal.scoring.scoreListingsForUsers, {
         listingIds: rescore,
