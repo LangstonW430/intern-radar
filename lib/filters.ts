@@ -1,7 +1,8 @@
 import type { CityLookup } from "./geo/parse";
 import { geocodeLocations, parseLocation } from "./geo/parse";
 import { haversineMiles } from "./geo/distance";
-import type { Preference } from "./schemas/profileSeed";
+import { keywordInText } from "./jdExtract";
+import type { Interest, Preference } from "./schemas/profileSeed";
 import { classYearFit, sponsorshipConflictInText } from "./textSignals";
 
 /**
@@ -27,6 +28,7 @@ export interface FilterableProfile {
   degreeLevel: string;
   gradDate: string; // YYYY-MM
   preferences: Preference[];
+  interests?: Interest[] | null;
 }
 
 export interface FilterResult {
@@ -117,6 +119,20 @@ export function applyHardFilters(
         }
         break;
       }
+    }
+  }
+
+  // Hard interests: a hard "want" requires a mention in title or JD; a hard
+  // "avoid" drops on any mention. Matched on whatever text exists — a
+  // no-JD listing is checked against its title alone.
+  for (const interest of profile.interests ?? []) {
+    if (interest.strength !== "hard") continue;
+    const mentioned = keywordInText(interest.keyword, text);
+    if (interest.tag === "want" && !mentioned) {
+      return { pass: false, droppedBy: `interestWant:${interest.keyword}` };
+    }
+    if (interest.tag === "avoid" && mentioned) {
+      return { pass: false, droppedBy: `interestAvoid:${interest.keyword}` };
     }
   }
   return { pass: true, droppedBy: null };

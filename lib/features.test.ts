@@ -156,6 +156,106 @@ describe("buildFeatures", () => {
   });
 });
 
+describe("extraction-based features", () => {
+  const extract = {
+    version: 1,
+    requirements: ["Experience with Python and React"],
+    preferred: ["AWS a plus"],
+    responsibilities: [],
+    skills: ["Python", "React", "AWS"],
+    requiredSkills: ["Python", "React"],
+    preferredSkills: ["AWS"],
+    facts: { degrees: ["bachelors"], minGpa: null, gradYears: [], pay: null, duration: null },
+  };
+  const withExtract = { ...baseListing, jdExtract: extract };
+  const skilledProfile = { ...baseProfile, skills: ["python", "Go"] };
+
+  it("computes required/preferred coverage against user skills", () => {
+    const f = buildFeatures(withExtract, skilledProfile, context);
+    expect(f.required_skill_coverage).toBe(0.5); // python yes, react no
+    expect(f.preferred_skill_coverage).toBe(0); // no AWS
+  });
+
+  it("is neutral without a JD, extract, or detected section", () => {
+    const noJd = buildFeatures(
+      { ...withExtract, jdStatus: "pending" },
+      skilledProfile,
+      context,
+    );
+    expect(noJd.required_skill_coverage).toBe(0.5);
+    expect(noJd.interest_match).toBe(0.5);
+    expect(noJd.avoid_match).toBe(0.5);
+    expect(noJd.degree_fit).toBe(0.5);
+
+    const noSections = buildFeatures(
+      {
+        ...baseListing,
+        jdExtract: { ...extract, requiredSkills: [], preferredSkills: [], facts: { ...extract.facts, degrees: [] } },
+      },
+      skilledProfile,
+      context,
+    );
+    expect(noSections.required_skill_coverage).toBe(0.5);
+    expect(noSections.degree_fit).toBe(0.5);
+
+    const noExtract = buildFeatures(
+      { ...baseListing, jdExtract: null },
+      skilledProfile,
+      context,
+    );
+    expect(noExtract.required_skill_coverage).toBe(0.5);
+  });
+
+  it("weights interest hits by strength and matches on title + JD", () => {
+    const listing = {
+      ...withExtract,
+      title: "Robotics Software Intern",
+      jdText: "You will work on compilers.",
+    };
+    const profile = {
+      ...baseProfile,
+      interests: [
+        { keyword: "robotics", tag: "want", strength: "strong" },
+        { keyword: "biology", tag: "want", strength: "soft" },
+      ] as never,
+    };
+    const f = buildFeatures(listing, profile, context);
+    expect(f.interest_match).toBeCloseTo(1.0 / 1.5, 5); // strong hit, soft miss
+
+    const avoider = buildFeatures(
+      listing,
+      {
+        ...baseProfile,
+        interests: [
+          { keyword: "compilers", tag: "avoid", strength: "soft" },
+        ] as never,
+      },
+      context,
+    );
+    expect(avoider.avoid_match).toBe(1);
+  });
+
+  it("is neutral when no interests are configured", () => {
+    const f = buildFeatures(withExtract, baseProfile, context);
+    expect(f.interest_match).toBe(0.5);
+    expect(f.avoid_match).toBe(0.5);
+  });
+
+  it("degree_fit is 1 on match, 0 on stated mismatch", () => {
+    const fit = buildFeatures(withExtract, skilledProfile, context);
+    expect(fit.degree_fit).toBe(1); // bachelors profile, bachelors mentioned
+    const misfit = buildFeatures(
+      {
+        ...withExtract,
+        jdExtract: { ...extract, facts: { ...extract.facts, degrees: ["phd"] } },
+      },
+      skilledProfile,
+      context,
+    );
+    expect(misfit.degree_fit).toBe(0);
+  });
+});
+
 describe("priorWeights", () => {
   it("derives strength-based weights and fixed priors", () => {
     const weights = priorWeights(baseProfile.preferences);

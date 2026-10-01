@@ -254,6 +254,54 @@ describe("location", () => {
   });
 });
 
+describe("hard interests", () => {
+  function runWithInterests(
+    listing: Partial<FilterableListing>,
+    interests: { keyword: string; tag: "want" | "avoid"; strength: "hard" | "strong" | "soft" | "ignore" }[],
+  ) {
+    return applyHardFilters(
+      { ...baseListing, ...listing },
+      { ...baseProfile, preferences: [], interests: interests as never },
+      lookupCity,
+    );
+  }
+
+  it("hard want drops listings that never mention the keyword", () => {
+    expect(
+      runWithInterests({ jdText: "We do databases." }, [
+        { keyword: "robotics", tag: "want", strength: "hard" },
+      ]),
+    ).toEqual({ pass: false, droppedBy: "interestWant:robotics" });
+  });
+
+  it("hard want passes on a title mention even without a JD", () => {
+    expect(
+      runWithInterests({ title: "Robotics Intern", jdText: null }, [
+        { keyword: "robotics", tag: "want", strength: "hard" },
+      ]).pass,
+    ).toBe(true);
+  });
+
+  it("hard avoid drops on any mention", () => {
+    expect(
+      runWithInterests({ jdText: "Expect occasional on-call crypto work." }, [
+        { keyword: "crypto", tag: "avoid", strength: "hard" },
+      ]),
+    ).toEqual({ pass: false, droppedBy: "interestAvoid:crypto" });
+  });
+
+  it("non-hard interests never drop", () => {
+    for (const strength of ["strong", "soft", "ignore"] as const) {
+      expect(
+        runWithInterests({ jdText: "crypto everywhere" }, [
+          { keyword: "crypto", tag: "avoid", strength },
+          { keyword: "unmentioned", tag: "want", strength },
+        ]).pass,
+      ).toBe(true);
+    }
+  });
+});
+
 describe("first matching rule wins and is reported", () => {
   it("reports the first conflicting rule in preference order", () => {
     const result = run({ degrees: ["phd"], sponsorship: "no_sponsorship" }, [

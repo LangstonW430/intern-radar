@@ -3,7 +3,8 @@ import featuresJson from "../shared/features.json";
 import type { FilterableListing, FilterableProfile } from "./filters";
 import { haversineMiles } from "./geo/distance";
 import { geocodeLocations, type CityLookup } from "./geo/parse";
-import type { Preference, Strength } from "./schemas/profileSeed";
+import { keywordInText, type JdExtract } from "./jdExtract";
+import type { Interest, Preference, Strength } from "./schemas/profileSeed";
 import { classYearFit } from "./textSignals";
 
 /**
@@ -40,11 +41,14 @@ export interface ScoringListing extends FilterableListing {
   embedding?: number[] | null;
   jdStatus: string;
   datePosted: number; // ms
+  jdExtract?: JdExtract | null;
 }
 
 export interface ScoringProfile extends FilterableProfile {
   resumeEmbedding?: number[] | null;
   preferenceVector?: number[] | null;
+  skills?: string[] | null;
+  interests?: Interest[] | null;
 }
 
 export interface ScoringContext {
@@ -161,6 +165,51 @@ export function buildFeatures(
   const days = Math.max(0, (context.now - listing.datePosted) / 86_400_000);
   const recency = Math.exp(-days / 14);
 
+  // Extraction-based features: 0.5 means "no information" — no JD, no
+  // detected section, or nothing configured on the profile.
+  const MID = 0.5;
+  const extract = hasJd ? (listing.jdExtract ?? null) : null;
+  const userSkills = new Set(
+    (profile.skills ?? []).map((s) => s.trim().toLowerCase()),
+  );
+
+  const coverage = (sectionSkills: string[] | undefined): number => {
+    if (!extract || !sectionSkills || sectionSkills.length === 0) return MID;
+    const hits = sectionSkills.filter((s) =>
+      userSkills.has(s.trim().toLowerCase()),
+    ).length;
+    return hits / sectionSkills.length;
+  };
+  const requiredSkillCoverage = coverage(extract?.requiredSkills);
+  const preferredSkillCoverage = coverage(extract?.preferredSkills);
+
+  const interestText = `${listing.title}\n${listing.jdText ?? ""}`;
+  const strengthWeight = (s: Strength) => (s === "strong" ? 1.0 : 0.5);
+  const softInterests = (tag: "want" | "avoid") =>
+    (profile.interests ?? []).filter(
+      (i) => i.tag === tag && (i.strength === "strong" || i.strength === "soft"),
+    );
+  const interestScore = (tag: "want" | "avoid"): number => {
+    const items = softInterests(tag);
+    if (items.length === 0) return MID; // nothing configured — no information
+    if (!hasJd) return MID; // title alone is too thin to score against
+    let total = 0;
+    let hit = 0;
+    for (const item of items) {
+      const w = strengthWeight(item.strength as Strength);
+      total += w;
+      if (keywordInText(item.keyword, interestText)) hit += w;
+    }
+    return total > 0 ? hit / total : MID;
+  };
+  const interestMatch = interestScore("want");
+  const avoidMatch = interestScore("avoid");
+
+  let degreeFit = MID;
+  if (extract && extract.facts.degrees.length > 0) {
+    degreeFit = extract.facts.degrees.includes(profile.degreeLevel) ? 1 : 0;
+  }
+
   return {
     bias: 1,
     embed_sim_resume: simResume,
@@ -173,6 +222,11 @@ export function buildFeatures(
     company_affinity: companyAffinity,
     recency,
     has_jd: hasJd,
+    required_skill_coverage: requiredSkillCoverage,
+    preferred_skill_coverage: preferredSkillCoverage,
+    interest_match: interestMatch,
+    avoid_match: avoidMatch,
+    degree_fit: degreeFit,
   };
 }
 

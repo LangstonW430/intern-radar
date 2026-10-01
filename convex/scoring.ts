@@ -22,6 +22,7 @@ function toFilterProfile(profile: Doc<"profiles">): FilterableProfile {
     degreeLevel: profile.degreeLevel,
     gradDate: profile.gradDate,
     preferences: profile.preferences as Preference[],
+    interests: profile.interests as FilterableProfile["interests"],
   };
 }
 
@@ -104,11 +105,14 @@ export const scoreListingsForUsers = internalMutation({
               embedding: listing.embedding,
               jdStatus: listing.jdStatus,
               datePosted: listing.datePosted,
+              jdExtract: listing.jdExtract as never,
             },
             {
               ...filterProfile,
               resumeEmbedding: profile.resumeEmbedding,
               preferenceVector: profile.preferenceVector,
+              skills: profile.skills,
+              interests: profile.interests as never,
             },
             { likedCompanies: context.likedCompanies, now, lookup: lookupCity },
           );

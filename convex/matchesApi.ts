@@ -15,6 +15,11 @@ const FACTOR_LABELS: Record<string, string> = {
   company_affinity: "Company you've engaged with before",
   recency: "Recently posted",
   has_jd: "Full description available",
+  required_skill_coverage: "You have the required skills",
+  preferred_skill_coverage: "You have preferred skills",
+  interest_match: "Mentions your interests",
+  avoid_match: "Mentions things you avoid",
+  degree_fit: "Degree level fits",
 };
 
 function topFactors(

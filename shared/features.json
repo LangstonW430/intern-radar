@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "embeddingModel": "BAAI/bge-small-en-v1.5",
   "embeddingDim": 384,
   "strengthPriors": { "strong": 1.0, "soft": 0.4, "hard": 0.0, "ignore": 0.0 },
@@ -16,6 +16,11 @@
     { "name": "class_year_signal", "strengthPref": "classYear", "bounds": [0, 3] },
     { "name": "company_affinity", "prior": 0.5, "bounds": [0, 3] },
     { "name": "recency", "prior": 0.5, "bounds": [0, 2] },
-    { "name": "has_jd", "prior": 0.25, "bounds": [0, 2] }
+    { "name": "has_jd", "prior": 0.25, "bounds": [0, 2] },
+    { "name": "required_skill_coverage", "prior": 1.0, "bounds": [0, 4], "neutralWithoutJd": true },
+    { "name": "preferred_skill_coverage", "prior": 0.5, "bounds": [0, 3], "neutralWithoutJd": true },
+    { "name": "interest_match", "prior": 0.8, "bounds": [0, 3], "neutralWithoutJd": true },
+    { "name": "avoid_match", "prior": -1.0, "bounds": [-4, 0], "neutralWithoutJd": true },
+    { "name": "degree_fit", "prior": 0.5, "bounds": [0, 3], "neutralWithoutJd": true }
   ]
 }
