@@ -88,6 +88,7 @@ const DETAIL: MatchDetailData = {
   url: "#",
   hasJd: true,
   jdStatus: "fetched",
+  agePenalty: null,
   matchedSkills: ["Python", "TypeScript", "PostgreSQL"],
   missingRequired: ["Go"],
   preferredSkills: [

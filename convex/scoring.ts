@@ -135,6 +135,7 @@ export const scoreListingsForUsers = internalMutation({
             stats,
             hasJd,
             noJdPenalty,
+            ageDays: Math.max(0, (now - listing.datePosted) / 86_400_000),
           });
           rawScore = result.rawScore;
           score = result.score;

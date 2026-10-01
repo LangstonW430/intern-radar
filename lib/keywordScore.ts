@@ -45,6 +45,20 @@ export interface ScoreResult {
   breakdown: ScoreBreakdown;
 }
 
+/**
+ * Freshness multiplier: 1.0 while the posting is within the grace window,
+ * then halving every halfLifeDays, floored. Applied after the sigmoid like
+ * NO_JD_PENALTY, so a stale posting can never show a near-100 score.
+ */
+export function agePenalty(
+  ageDays: number,
+  config: ScoringConfig = SCORING_CONFIG,
+): number {
+  const { graceDays, halfLifeDays, floor } = config.agePenalty;
+  if (!Number.isFinite(ageDays) || ageDays <= graceDays) return 1;
+  return Math.max(floor, 2 ** (-(ageDays - graceDays) / halfLifeDays));
+}
+
 /** IDF for a weight-map key: corpus stats for vocabulary keywords, a fixed
  * default for custom ones (they're never counted in the stats). */
 export function keywordIdf(
@@ -92,6 +106,9 @@ export interface ScoreListingInput {
   config?: ScoringConfig;
   hasJd: boolean;
   noJdPenalty: number;
+  /** Days since the listing was posted; 0 (no penalty) when omitted —
+   * learning and eval use the pre-penalty probability. */
+  ageDays?: number;
 }
 
 export function scoreListing(input: ScoreListingInput): ScoreResult {
@@ -119,7 +136,9 @@ export function scoreListing(input: ScoreListingInput): ScoreResult {
   }
 
   const rawScore = sigmoid(logit);
-  const score = input.hasJd ? rawScore : rawScore * input.noJdPenalty;
+  const score =
+    (input.hasJd ? rawScore : rawScore * input.noJdPenalty) *
+    agePenalty(input.ageDays ?? 0, config);
   return {
     logit,
     rawScore,

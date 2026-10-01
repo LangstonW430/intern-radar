@@ -6,6 +6,7 @@ import {
   topPositiveFactors,
 } from "../lib/breakdownView";
 import { keywordInText, type JdExtract } from "../lib/jdExtract";
+import { agePenalty } from "../lib/keywordScore";
 import type { Interest } from "../lib/schemas/profileSeed";
 import { keywordDisplayName } from "../lib/vocabulary";
 import { query } from "./_generated/server";
@@ -146,10 +147,16 @@ export const detail = query({
         }
       : null;
 
+    // Post-model multipliers, computed live so the panel can explain the
+    // gap between the model probability and the displayed score.
+    const ageDays = Math.max(0, (Date.now() - listing.datePosted) / 86_400_000);
+    const appliedAgePenalty = agePenalty(ageDays);
+
     return {
       url: listing.url,
       hasJd,
       jdStatus: listing.jdStatus,
+      agePenalty: appliedAgePenalty < 1 ? appliedAgePenalty : null,
       matchedSkills,
       missingRequired,
       preferredSkills,

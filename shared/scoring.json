@@ -25,6 +25,7 @@
   "defaultIdf": 2.0,
   "idfMax": 4.0,
   "noJdNeutral": 0.6,
+  "agePenalty": { "graceDays": 7, "halfLifeDays": 21, "floor": 0.25 },
   "learning": { "learningRate": 0.5, "decay": 0.02, "rareCap": 0.5 },
   "feedbackWeights": { "applied": 2.0, "default": 1.0 }
 }

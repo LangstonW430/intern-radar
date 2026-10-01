@@ -4,6 +4,9 @@ export interface MatchDetailData {
   url: string;
   hasJd: boolean;
   jdStatus: string;
+  /** Post-model freshness multiplier when the posting is past the grace
+   * window, else null. */
+  agePenalty: number | null;
   matchedSkills: string[];
   missingRequired: string[];
   preferredSkills: { name: string; have: boolean }[];
@@ -117,6 +120,14 @@ export default function MatchDetailView({ detail }: { detail: MatchDetailData })
                 {signed(detail.breakdown.bias)}
               </span>
             </li>
+            {detail.agePenalty !== null && (
+              <li className="flex justify-between gap-4 py-px">
+                <span>Older posting — score multiplied</span>
+                <span className="font-mono tabular-nums">
+                  ×{detail.agePenalty.toFixed(2)}
+                </span>
+              </li>
+            )}
           </ul>
         </div>
       )}

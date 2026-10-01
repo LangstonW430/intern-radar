@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  agePenalty,
   breakdownLogit,
   customKeywordHits,
   keywordIdf,
@@ -92,6 +93,19 @@ describe("scoreListing", () => {
     expect(withoutJd.score).toBeCloseTo(withoutJd.rawScore * 0.6, 12);
   });
 
+  it("applies the age penalty multiplicatively, stacking with no-JD", () => {
+    const fresh = scoreListing({ ...input, ageDays: 3 });
+    expect(fresh.score).toBe(fresh.rawScore);
+    const stale = scoreListing({ ...input, ageDays: 30 });
+    expect(stale.score).toBeCloseTo(stale.rawScore * agePenalty(30), 12);
+    expect(stale.rawScore).toBe(fresh.rawScore); // penalty is post-model
+    const staleNoJd = scoreListing({ ...input, ageDays: 30, hasJd: false });
+    expect(staleNoJd.score).toBeCloseTo(
+      staleNoJd.rawScore * 0.6 * agePenalty(30),
+      12,
+    );
+  });
+
   it("negative keyword weights pull the score down", () => {
     const withAvoid = scoreListing({
       ...input,
@@ -103,6 +117,26 @@ describe("scoreListing", () => {
       (k) => k.id === "blockchain",
     )!;
     expect(avoid.contribution).toBeLessThan(0);
+  });
+});
+
+describe("agePenalty", () => {
+  const { graceDays, halfLifeDays, floor } = SCORING_CONFIG.agePenalty;
+
+  it("is 1 through the grace window", () => {
+    expect(agePenalty(0)).toBe(1);
+    expect(agePenalty(graceDays)).toBe(1);
+  });
+
+  it("halves every halfLifeDays past the grace window, monotonically", () => {
+    expect(agePenalty(graceDays + halfLifeDays)).toBeCloseTo(0.5, 12);
+    expect(agePenalty(graceDays + 2 * halfLifeDays)).toBeCloseTo(0.25, 12);
+    expect(agePenalty(10)).toBeGreaterThan(agePenalty(20));
+    expect(agePenalty(20)).toBeGreaterThan(agePenalty(40));
+  });
+
+  it("never drops below the floor", () => {
+    expect(agePenalty(10_000)).toBe(floor);
   });
 });
 

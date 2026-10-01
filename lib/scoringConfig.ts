@@ -49,6 +49,13 @@ const scoringConfigSchema = z.object({
   // Caps log((N+1)/(df+1))+1 so one ultra-rare keyword can't dominate.
   idfMax: z.number().positive(),
   noJdNeutral: z.number(),
+  // Post-model freshness multiplier: 1.0 through graceDays, then halves
+  // every halfLifeDays, never below floor. Fixed, never learned.
+  agePenalty: z.object({
+    graceDays: z.number().nonnegative(),
+    halfLifeDays: z.number().positive(),
+    floor: z.number().min(0).max(1),
+  }),
   learning: z.object({
     learningRate: z.number().positive(),
     decay: z.number().nonnegative(),
