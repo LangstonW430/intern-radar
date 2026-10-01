@@ -127,3 +127,156 @@ export const patchKeywordsBatch = internalMutation({
     }
   },
 });
+
+// ------------------------------------------------------------------ status
+
+interface MigrateStatusSummary {
+  profiles: number;
+  profilesWithKeywordWeights: number;
+  keywordStats: { totalWithJd: number; distinctKeywords: number } | null;
+  scheduledPending: number;
+  scheduledPendingNames: string[];
+}
+
+/** Migration progress/health report: paginated counts over listings and
+ * matches, small-table summaries, and the scheduler backlog — so a
+ * migration run can be watched to completion without guessing from logs. */
+export const status = internalAction({
+  args: {},
+  handler: async (ctx): Promise<Record<string, unknown>> => {
+    const listings = {
+      total: 0,
+      active: 0,
+      fetchedJd: 0,
+      withKeywords: 0,
+      onCurrentVocabVersion: 0,
+    };
+    let cursor: string | null = null;
+    for (;;) {
+      const page: {
+        page: {
+          active: boolean;
+          jdStatus: string;
+          hasKeywords: boolean;
+          keywordsVersion: number | null;
+        }[];
+        isDone: boolean;
+        continueCursor: string;
+      } = await ctx.runQuery(internal.migrate.statusListingsPage, { cursor });
+      for (const l of page.page) {
+        listings.total++;
+        if (l.active) listings.active++;
+        if (l.jdStatus === "fetched") listings.fetchedJd++;
+        if (l.hasKeywords) listings.withKeywords++;
+        if (l.keywordsVersion === VOCABULARY_VERSION) {
+          listings.onCurrentVocabVersion++;
+        }
+      }
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+
+    const matches = {
+      total: 0,
+      withBreakdown: 0,
+      withLegacyModelVersion: 0,
+      dropped: 0,
+    };
+    cursor = null;
+    for (;;) {
+      const page: {
+        page: {
+          hasBreakdown: boolean;
+          hasModelVersion: boolean;
+          dropped: boolean;
+        }[];
+        isDone: boolean;
+        continueCursor: string;
+      } = await ctx.runQuery(internal.migrate.statusMatchesPage, { cursor });
+      for (const m of page.page) {
+        matches.total++;
+        if (m.hasBreakdown) matches.withBreakdown++;
+        if (m.hasModelVersion) matches.withLegacyModelVersion++;
+        if (m.dropped) matches.dropped++;
+      }
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+
+    const summary: MigrateStatusSummary = await ctx.runQuery(
+      internal.migrate.statusSummary,
+      {},
+    );
+    const report = { listings, matches, ...summary };
+    console.log(JSON.stringify(report, null, 2));
+    return report;
+  },
+});
+
+export const statusListingsPage = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db
+      .query("listings")
+      .paginate({ numItems: 200, cursor });
+    return {
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+      page: page.page.map((l) => ({
+        active: l.active,
+        jdStatus: l.jdStatus,
+        hasKeywords: l.keywords !== undefined,
+        keywordsVersion: l.keywordsVersion ?? null,
+      })),
+    };
+  },
+});
+
+export const statusMatchesPage = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db
+      .query("matches")
+      .paginate({ numItems: 300, cursor });
+    return {
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+      page: page.page.map((m) => ({
+        hasBreakdown: m.breakdown !== undefined,
+        hasModelVersion: m.modelVersion !== undefined,
+        dropped: m.droppedBy !== null,
+      })),
+    };
+  },
+});
+
+export const statusSummary = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<MigrateStatusSummary> => {
+    const profiles = await ctx.db.query("profiles").collect();
+    const stats = await ctx.db.query("keywordStats").first();
+    // Recent entries cover anything our migrations scheduled; completed
+    // history can be large, so only the newest slice is scanned.
+    const recentScheduled = await ctx.db.system
+      .query("_scheduled_functions")
+      .order("desc")
+      .take(500);
+    const pending = recentScheduled.filter(
+      (s) => s.state.kind === "pending" || s.state.kind === "inProgress",
+    );
+    return {
+      profiles: profiles.length,
+      profilesWithKeywordWeights: profiles.filter(
+        (p) => p.keywordWeights !== undefined,
+      ).length,
+      keywordStats: stats
+        ? {
+            totalWithJd: stats.totalWithJd,
+            distinctKeywords: Object.keys(stats.df).length,
+          }
+        : null,
+      scheduledPending: pending.length,
+      scheduledPendingNames: [...new Set(pending.map((s) => s.name))],
+    };
+  },
+});
