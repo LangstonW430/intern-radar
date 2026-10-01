@@ -141,7 +141,7 @@ function escapeRegex(value: string): string {
 
 // Word boundaries that survive c++, c#, .net, node.js: no letter/digit/+/#
 // directly before or after the alias.
-function aliasPattern(alias: string): RegExp {
+export function aliasPattern(alias: string): RegExp {
   return new RegExp(
     `(?<![a-z0-9+#])${escapeRegex(alias)}(?![a-z0-9+#])`,
     "i",

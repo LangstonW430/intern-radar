@@ -4,6 +4,7 @@
 profile.seed.json
 private/
 data/labels/
+data/vocab/
 
 # Dependencies and build output
 node_modules/

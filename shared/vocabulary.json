@@ -1,0 +1,2762 @@
+{
+  "version": 1,
+  "comment": "Canonical keyword vocabulary for the per-user keyword-weight model. Lowercase aliases, word-boundary matched (same semantics as skills.json). Categories: skill | domain | role_type | work_style. Seeded from skills.json; curated with scripts/vocab-candidates.ts output.",
+  "entries": [
+    {
+      "id": "python",
+      "name": "Python",
+      "aliases": [
+        "python"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "java",
+      "name": "Java",
+      "aliases": [
+        "java"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "aliases": [
+        "javascript",
+        "js"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "typescript",
+      "name": "TypeScript",
+      "aliases": [
+        "typescript",
+        "ts"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "cpp",
+      "name": "C++",
+      "aliases": [
+        "c++",
+        "cpp",
+        "c/c++"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "c",
+      "name": "C",
+      "aliases": [
+        "c programming",
+        "c language",
+        "c/c++",
+        "embedded c"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "csharp",
+      "name": "C#",
+      "aliases": [
+        "c#",
+        "csharp"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "go",
+      "name": "Go",
+      "aliases": [
+        "golang",
+        "go programming"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "rust",
+      "name": "Rust",
+      "aliases": [
+        "rust"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "ruby",
+      "name": "Ruby",
+      "aliases": [
+        "ruby",
+        "ruby on rails",
+        "rails"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "php",
+      "name": "PHP",
+      "aliases": [
+        "php"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "swift",
+      "name": "Swift",
+      "aliases": [
+        "swift",
+        "swiftui"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "kotlin",
+      "name": "Kotlin",
+      "aliases": [
+        "kotlin"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "scala",
+      "name": "Scala",
+      "aliases": [
+        "scala"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "r",
+      "name": "R",
+      "aliases": [
+        "r programming",
+        "r language",
+        "rstudio",
+        "r studio"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "matlab",
+      "name": "MATLAB",
+      "aliases": [
+        "matlab"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "perl",
+      "name": "Perl",
+      "aliases": [
+        "perl"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "haskell",
+      "name": "Haskell",
+      "aliases": [
+        "haskell"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "julia",
+      "name": "Julia",
+      "aliases": [
+        "julia"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "objective-c",
+      "name": "Objective-C",
+      "aliases": [
+        "objective-c",
+        "objective c"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "dart",
+      "name": "Dart",
+      "aliases": [
+        "dart",
+        "flutter"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "elixir",
+      "name": "Elixir",
+      "aliases": [
+        "elixir"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "lua",
+      "name": "Lua",
+      "aliases": [
+        "lua"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "fortran",
+      "name": "Fortran",
+      "aliases": [
+        "fortran"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "cobol",
+      "name": "COBOL",
+      "aliases": [
+        "cobol"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "assembly",
+      "name": "Assembly",
+      "aliases": [
+        "assembly language",
+        "x86 assembly",
+        "arm assembly"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "sql",
+      "name": "SQL",
+      "aliases": [
+        "sql"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "nosql",
+      "name": "NoSQL",
+      "aliases": [
+        "nosql"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "html",
+      "name": "HTML",
+      "aliases": [
+        "html",
+        "html5"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "css",
+      "name": "CSS",
+      "aliases": [
+        "css",
+        "css3",
+        "sass",
+        "scss",
+        "less"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "bash",
+      "name": "Bash",
+      "aliases": [
+        "bash",
+        "shell scripting",
+        "shell script"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "powershell",
+      "name": "PowerShell",
+      "aliases": [
+        "powershell"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "vba",
+      "name": "VBA",
+      "aliases": [
+        "vba"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "solidity",
+      "name": "Solidity",
+      "aliases": [
+        "solidity"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "verilog",
+      "name": "Verilog",
+      "aliases": [
+        "verilog",
+        "systemverilog",
+        "system verilog"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "vhdl",
+      "name": "VHDL",
+      "aliases": [
+        "vhdl"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "react",
+      "name": "React",
+      "aliases": [
+        "react",
+        "react.js",
+        "reactjs"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "react-native",
+      "name": "React Native",
+      "aliases": [
+        "react native"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "nextjs",
+      "name": "Next.js",
+      "aliases": [
+        "next.js",
+        "nextjs"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "angular",
+      "name": "Angular",
+      "aliases": [
+        "angular",
+        "angularjs"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "vue",
+      "name": "Vue",
+      "aliases": [
+        "vue",
+        "vue.js",
+        "vuejs"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "svelte",
+      "name": "Svelte",
+      "aliases": [
+        "svelte",
+        "sveltekit"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "nodejs",
+      "name": "Node.js",
+      "aliases": [
+        "node.js",
+        "nodejs",
+        "node js"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "express",
+      "name": "Express",
+      "aliases": [
+        "express.js",
+        "expressjs"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "django",
+      "name": "Django",
+      "aliases": [
+        "django"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "flask",
+      "name": "Flask",
+      "aliases": [
+        "flask"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "fastapi",
+      "name": "FastAPI",
+      "aliases": [
+        "fastapi"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "spring",
+      "name": "Spring",
+      "aliases": [
+        "spring boot",
+        "spring framework",
+        "springboot"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "dotnet",
+      "name": ".NET",
+      "aliases": [
+        ".net",
+        "dotnet",
+        "asp.net"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "laravel",
+      "name": "Laravel",
+      "aliases": [
+        "laravel"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "graphql",
+      "name": "GraphQL",
+      "aliases": [
+        "graphql"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "rest",
+      "name": "REST",
+      "aliases": [
+        "rest api",
+        "rest apis",
+        "restful"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "grpc",
+      "name": "gRPC",
+      "aliases": [
+        "grpc"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "websockets",
+      "name": "WebSockets",
+      "aliases": [
+        "websocket",
+        "websockets"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "tailwind",
+      "name": "Tailwind",
+      "aliases": [
+        "tailwind",
+        "tailwindcss"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "jquery",
+      "name": "jQuery",
+      "aliases": [
+        "jquery"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "electron",
+      "name": "Electron",
+      "aliases": [
+        "electron"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "astro",
+      "name": "Astro",
+      "aliases": [
+        "astro"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "redux",
+      "name": "Redux",
+      "aliases": [
+        "redux"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "webassembly",
+      "name": "WebAssembly",
+      "aliases": [
+        "webassembly",
+        "wasm"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "machine-learning",
+      "name": "Machine Learning",
+      "aliases": [
+        "machine learning",
+        "ml models",
+        "ml engineering"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "deep-learning",
+      "name": "Deep Learning",
+      "aliases": [
+        "deep learning",
+        "neural networks",
+        "neural network"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "nlp",
+      "name": "NLP",
+      "aliases": [
+        "nlp",
+        "natural language processing",
+        "computational linguistics"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "computer-vision",
+      "name": "Computer Vision",
+      "aliases": [
+        "computer vision",
+        "image processing",
+        "opencv"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "reinforcement-learning",
+      "name": "Reinforcement Learning",
+      "aliases": [
+        "reinforcement learning"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "llms",
+      "name": "LLMs",
+      "aliases": [
+        "llm",
+        "llms",
+        "large language model",
+        "large language models",
+        "generative ai",
+        "genai",
+        "gen ai"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "pytorch",
+      "name": "PyTorch",
+      "aliases": [
+        "pytorch",
+        "torch"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "tensorflow",
+      "name": "TensorFlow",
+      "aliases": [
+        "tensorflow"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "keras",
+      "name": "Keras",
+      "aliases": [
+        "keras"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "scikit-learn",
+      "name": "scikit-learn",
+      "aliases": [
+        "scikit-learn",
+        "scikit learn",
+        "sklearn"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "pandas",
+      "name": "pandas",
+      "aliases": [
+        "pandas"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "numpy",
+      "name": "NumPy",
+      "aliases": [
+        "numpy"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "scipy",
+      "name": "SciPy",
+      "aliases": [
+        "scipy"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "jupyter",
+      "name": "Jupyter",
+      "aliases": [
+        "jupyter"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "hugging-face",
+      "name": "Hugging Face",
+      "aliases": [
+        "hugging face",
+        "huggingface",
+        "transformers library"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "langchain",
+      "name": "LangChain",
+      "aliases": [
+        "langchain"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "rag",
+      "name": "RAG",
+      "aliases": [
+        "retrieval-augmented generation",
+        "retrieval augmented generation"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "mlops",
+      "name": "MLOps",
+      "aliases": [
+        "mlops",
+        "ml ops"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "feature-engineering",
+      "name": "Feature Engineering",
+      "aliases": [
+        "feature engineering"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "a-b-testing",
+      "name": "A/B Testing",
+      "aliases": [
+        "a/b testing",
+        "ab testing",
+        "a/b tests"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "statistics",
+      "name": "Statistics",
+      "aliases": [
+        "statistics",
+        "statistical analysis",
+        "statistical modeling",
+        "statistical modelling"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "data-analysis",
+      "name": "Data Analysis",
+      "aliases": [
+        "data analysis",
+        "data analytics",
+        "exploratory data analysis"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "data-visualization",
+      "name": "Data Visualization",
+      "aliases": [
+        "data visualization",
+        "data visualisation",
+        "dashboards"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "data-engineering",
+      "name": "Data Engineering",
+      "aliases": [
+        "data engineering",
+        "data pipelines",
+        "data pipeline",
+        "etl",
+        "elt"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "data-science",
+      "name": "Data Science",
+      "aliases": [
+        "data science"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "data-modeling",
+      "name": "Data Modeling",
+      "aliases": [
+        "data modeling",
+        "data modelling"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "time-series",
+      "name": "Time Series",
+      "aliases": [
+        "time series",
+        "forecasting"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "recommendation-systems",
+      "name": "Recommendation Systems",
+      "aliases": [
+        "recommendation system",
+        "recommendation systems",
+        "recommender systems",
+        "recommender system"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "tableau",
+      "name": "Tableau",
+      "aliases": [
+        "tableau"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "power-bi",
+      "name": "Power BI",
+      "aliases": [
+        "power bi",
+        "powerbi"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "looker",
+      "name": "Looker",
+      "aliases": [
+        "looker"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "excel",
+      "name": "Excel",
+      "aliases": [
+        "excel",
+        "microsoft excel",
+        "spreadsheets"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "dbt",
+      "name": "dbt",
+      "aliases": [
+        "dbt"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "spark",
+      "name": "Spark",
+      "aliases": [
+        "spark",
+        "pyspark",
+        "apache spark"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "hadoop",
+      "name": "Hadoop",
+      "aliases": [
+        "hadoop"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "kafka",
+      "name": "Kafka",
+      "aliases": [
+        "kafka"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "airflow",
+      "name": "Airflow",
+      "aliases": [
+        "airflow"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "flink",
+      "name": "Flink",
+      "aliases": [
+        "flink"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "databricks",
+      "name": "Databricks",
+      "aliases": [
+        "databricks"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "snowflake",
+      "name": "Snowflake",
+      "aliases": [
+        "snowflake"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "bigquery",
+      "name": "BigQuery",
+      "aliases": [
+        "bigquery",
+        "big query"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "redshift",
+      "name": "Redshift",
+      "aliases": [
+        "redshift"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "aws",
+      "name": "AWS",
+      "aliases": [
+        "aws",
+        "amazon web services",
+        "ec2",
+        "lambda",
+        "aws lambda"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "azure",
+      "name": "Azure",
+      "aliases": [
+        "azure",
+        "microsoft azure"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "gcp",
+      "name": "GCP",
+      "aliases": [
+        "gcp",
+        "google cloud"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "s3",
+      "name": "S3",
+      "aliases": [
+        "s3"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "docker",
+      "name": "Docker",
+      "aliases": [
+        "docker",
+        "containers",
+        "containerization"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "kubernetes",
+      "name": "Kubernetes",
+      "aliases": [
+        "kubernetes",
+        "k8s"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "terraform",
+      "name": "Terraform",
+      "aliases": [
+        "terraform",
+        "infrastructure as code",
+        "iac"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "ansible",
+      "name": "Ansible",
+      "aliases": [
+        "ansible"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "ci-cd",
+      "name": "CI/CD",
+      "aliases": [
+        "ci/cd",
+        "continuous integration",
+        "continuous delivery",
+        "continuous deployment"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "jenkins",
+      "name": "Jenkins",
+      "aliases": [
+        "jenkins"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "github-actions",
+      "name": "GitHub Actions",
+      "aliases": [
+        "github actions"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab",
+      "aliases": [
+        "gitlab"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "aliases": [
+        "git",
+        "version control"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "linux",
+      "name": "Linux",
+      "aliases": [
+        "linux",
+        "unix"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "serverless",
+      "name": "Serverless",
+      "aliases": [
+        "serverless"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "microservices",
+      "name": "Microservices",
+      "aliases": [
+        "microservices",
+        "microservice"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "distributed-systems",
+      "name": "Distributed Systems",
+      "aliases": [
+        "distributed systems",
+        "distributed computing"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "networking",
+      "name": "Networking",
+      "aliases": [
+        "tcp/ip",
+        "computer networking",
+        "network protocols",
+        "dns",
+        "http/https"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "observability",
+      "name": "Observability",
+      "aliases": [
+        "observability",
+        "monitoring",
+        "grafana",
+        "prometheus",
+        "datadog",
+        "splunk"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "nginx",
+      "name": "Nginx",
+      "aliases": [
+        "nginx"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "aliases": [
+        "vercel"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "aliases": [
+        "netlify"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "aliases": [
+        "cloudflare"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "redis",
+      "name": "Redis",
+      "aliases": [
+        "redis"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL",
+      "aliases": [
+        "postgresql",
+        "postgres"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "mysql",
+      "name": "MySQL",
+      "aliases": [
+        "mysql"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite",
+      "aliases": [
+        "sqlite"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "mongodb",
+      "name": "MongoDB",
+      "aliases": [
+        "mongodb",
+        "mongo"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "dynamodb",
+      "name": "DynamoDB",
+      "aliases": [
+        "dynamodb"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "cassandra",
+      "name": "Cassandra",
+      "aliases": [
+        "cassandra"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "elasticsearch",
+      "name": "Elasticsearch",
+      "aliases": [
+        "elasticsearch",
+        "elastic search",
+        "opensearch"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "sql-server",
+      "name": "SQL Server",
+      "aliases": [
+        "sql server",
+        "mssql",
+        "t-sql"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "oracle-db",
+      "name": "Oracle DB",
+      "aliases": [
+        "oracle database",
+        "pl/sql"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "aliases": [
+        "supabase"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "firebase",
+      "name": "Firebase",
+      "aliases": [
+        "firebase"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "convex",
+      "name": "Convex",
+      "aliases": [
+        "convex"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "ios",
+      "name": "iOS",
+      "aliases": [
+        "ios development",
+        "ios app",
+        "ios apps"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "android",
+      "name": "Android",
+      "aliases": [
+        "android"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "mobile-development",
+      "name": "Mobile Development",
+      "aliases": [
+        "mobile development",
+        "mobile apps",
+        "mobile applications"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "embedded-systems",
+      "name": "Embedded Systems",
+      "aliases": [
+        "embedded systems",
+        "embedded software",
+        "firmware",
+        "microcontroller",
+        "microcontrollers",
+        "rtos"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "fpga",
+      "name": "FPGA",
+      "aliases": [
+        "fpga",
+        "fpgas"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "robotics",
+      "name": "Robotics",
+      "aliases": [
+        "robotics",
+        "ros"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "signal-processing",
+      "name": "Signal Processing",
+      "aliases": [
+        "signal processing",
+        "dsp"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "control-systems",
+      "name": "Control Systems",
+      "aliases": [
+        "control systems",
+        "control theory"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "cuda",
+      "name": "CUDA",
+      "aliases": [
+        "cuda",
+        "gpu programming"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "game-development",
+      "name": "Game Development",
+      "aliases": [
+        "game development",
+        "unity",
+        "unreal engine",
+        "unreal"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "graphics",
+      "name": "Graphics",
+      "aliases": [
+        "opengl",
+        "vulkan",
+        "directx",
+        "computer graphics",
+        "webgl"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "ar-vr",
+      "name": "AR/VR",
+      "aliases": [
+        "augmented reality",
+        "virtual reality",
+        "ar/vr",
+        "xr"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "blockchain",
+      "name": "Blockchain",
+      "aliases": [
+        "blockchain",
+        "web3",
+        "smart contracts",
+        "smart contract"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "security",
+      "name": "Security",
+      "aliases": [
+        "cybersecurity",
+        "cyber security",
+        "information security",
+        "infosec",
+        "application security",
+        "appsec"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "penetration-testing",
+      "name": "Penetration Testing",
+      "aliases": [
+        "penetration testing",
+        "pen testing",
+        "pentesting"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "cryptography",
+      "name": "Cryptography",
+      "aliases": [
+        "cryptography",
+        "encryption"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "identity-access",
+      "name": "Identity & Access",
+      "aliases": [
+        "oauth",
+        "oidc",
+        "sso",
+        "identity and access management",
+        "iam"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "threat-modeling",
+      "name": "Threat Modeling",
+      "aliases": [
+        "threat modeling",
+        "threat modelling"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "siem",
+      "name": "SIEM",
+      "aliases": [
+        "siem"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "data-structures-algorithms",
+      "name": "Data Structures & Algorithms",
+      "aliases": [
+        "data structures",
+        "algorithms",
+        "algorithm design"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "object-oriented-programming",
+      "name": "Object-Oriented Programming",
+      "aliases": [
+        "object-oriented",
+        "object oriented",
+        "oop"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "functional-programming",
+      "name": "Functional Programming",
+      "aliases": [
+        "functional programming"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "operating-systems",
+      "name": "Operating Systems",
+      "aliases": [
+        "operating systems"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "compilers",
+      "name": "Compilers",
+      "aliases": [
+        "compilers",
+        "compiler design",
+        "llvm"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "concurrency",
+      "name": "Concurrency",
+      "aliases": [
+        "concurrency",
+        "multithreading",
+        "multi-threading",
+        "parallel programming",
+        "parallel computing"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "testing",
+      "name": "Testing",
+      "aliases": [
+        "unit testing",
+        "integration testing",
+        "test automation",
+        "automated testing",
+        "test-driven",
+        "tdd",
+        "pytest",
+        "junit",
+        "jest",
+        "selenium",
+        "playwright",
+        "cypress"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "debugging",
+      "name": "Debugging",
+      "aliases": [
+        "debugging",
+        "troubleshooting"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "code-review",
+      "name": "Code Review",
+      "aliases": [
+        "code review",
+        "code reviews"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "system-design",
+      "name": "System Design",
+      "aliases": [
+        "system design",
+        "software architecture",
+        "software design"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "performance-optimization",
+      "name": "Performance Optimization",
+      "aliases": [
+        "performance optimization",
+        "performance tuning",
+        "profiling"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "full-stack",
+      "name": "Full-Stack",
+      "aliases": [
+        "full-stack",
+        "full stack",
+        "fullstack"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "frontend",
+      "name": "Frontend",
+      "aliases": [
+        "front-end",
+        "front end",
+        "frontend"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "backend",
+      "name": "Backend",
+      "aliases": [
+        "back-end",
+        "back end",
+        "backend"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "web-development",
+      "name": "Web Development",
+      "aliases": [
+        "web development",
+        "web applications",
+        "web apps",
+        "web services"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "apis",
+      "name": "APIs",
+      "aliases": [
+        "api development",
+        "api design",
+        "apis"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "agile",
+      "name": "Agile",
+      "aliases": [
+        "agile",
+        "scrum",
+        "kanban"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "jira",
+      "name": "Jira",
+      "aliases": [
+        "jira"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "confluence",
+      "name": "Confluence",
+      "aliases": [
+        "confluence"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "technical-writing",
+      "name": "Technical Writing",
+      "aliases": [
+        "technical writing",
+        "documentation"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "ux-ui",
+      "name": "UX/UI",
+      "aliases": [
+        "ui/ux",
+        "ux/ui",
+        "user experience",
+        "user interface design",
+        "figma"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "accessibility",
+      "name": "Accessibility",
+      "aliases": [
+        "accessibility",
+        "wcag",
+        "a11y"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "localization",
+      "name": "Localization",
+      "aliases": [
+        "localization",
+        "internationalization",
+        "i18n"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "salesforce",
+      "name": "Salesforce",
+      "aliases": [
+        "salesforce",
+        "apex"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "sap",
+      "name": "SAP",
+      "aliases": [
+        "sap",
+        "abap"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "servicenow",
+      "name": "ServiceNow",
+      "aliases": [
+        "servicenow"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "workday",
+      "name": "Workday",
+      "aliases": [
+        "workday integration",
+        "workday studio"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "sharepoint",
+      "name": "SharePoint",
+      "aliases": [
+        "sharepoint"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "power-platform",
+      "name": "Power Platform",
+      "aliases": [
+        "power apps",
+        "powerapps",
+        "power automate"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "rpa",
+      "name": "RPA",
+      "aliases": [
+        "rpa",
+        "robotic process automation",
+        "uipath"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "mainframe",
+      "name": "Mainframe",
+      "aliases": [
+        "mainframe",
+        "as/400"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "gis",
+      "name": "GIS",
+      "aliases": [
+        "gis",
+        "arcgis",
+        "geospatial"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "bioinformatics",
+      "name": "Bioinformatics",
+      "aliases": [
+        "bioinformatics"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "quantum-computing",
+      "name": "Quantum Computing",
+      "aliases": [
+        "quantum computing",
+        "qiskit"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "hpc",
+      "name": "HPC",
+      "aliases": [
+        "high performance computing",
+        "high-performance computing",
+        "hpc",
+        "mpi",
+        "openmp"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "simulation",
+      "name": "Simulation",
+      "aliases": [
+        "simulation",
+        "monte carlo",
+        "modeling and simulation"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "optimization",
+      "name": "Optimization",
+      "aliases": [
+        "mathematical optimization",
+        "linear programming",
+        "operations research",
+        "gurobi"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "numerical-methods",
+      "name": "Numerical Methods",
+      "aliases": [
+        "numerical methods",
+        "numerical analysis"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "linear-algebra",
+      "name": "Linear Algebra",
+      "aliases": [
+        "linear algebra"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "probability",
+      "name": "Probability",
+      "aliases": [
+        "probability",
+        "stochastic"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "econometrics",
+      "name": "Econometrics",
+      "aliases": [
+        "econometrics"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "quantitative-research",
+      "name": "Quantitative Research",
+      "aliases": [
+        "quantitative research",
+        "quantitative analysis",
+        "quant research"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "financial-modeling",
+      "name": "Financial Modeling",
+      "aliases": [
+        "financial modeling",
+        "financial modelling"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "risk-management",
+      "name": "Risk Management",
+      "aliases": [
+        "risk management",
+        "risk modeling"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "etl-tools",
+      "name": "ETL Tools",
+      "aliases": [
+        "informatica",
+        "talend",
+        "ssis"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "crm",
+      "name": "CRM",
+      "aliases": [
+        "crm systems",
+        "hubspot"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "product-analytics",
+      "name": "Product Analytics",
+      "aliases": [
+        "product analytics",
+        "amplitude",
+        "mixpanel",
+        "google analytics"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "seo",
+      "name": "SEO",
+      "aliases": [
+        "seo",
+        "search engine optimization"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "streamlit",
+      "name": "Streamlit",
+      "aliases": [
+        "streamlit"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "gradio",
+      "name": "Gradio",
+      "aliases": [
+        "gradio"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "openapi",
+      "name": "OpenAPI",
+      "aliases": [
+        "openapi",
+        "swagger"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "protobuf",
+      "name": "Protobuf",
+      "aliases": [
+        "protobuf",
+        "protocol buffers"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "message-queues",
+      "name": "Message Queues",
+      "aliases": [
+        "rabbitmq",
+        "message queues",
+        "sqs",
+        "pub/sub",
+        "pubsub"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "caching",
+      "name": "Caching",
+      "aliases": [
+        "caching",
+        "memcached",
+        "cdn"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "batch-processing",
+      "name": "Batch Processing",
+      "aliases": [
+        "batch processing",
+        "stream processing"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "data-warehousing",
+      "name": "Data Warehousing",
+      "aliases": [
+        "data warehouse",
+        "data warehousing",
+        "data lake",
+        "data lakes",
+        "lakehouse"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "data-governance",
+      "name": "Data Governance",
+      "aliases": [
+        "data governance",
+        "data quality",
+        "master data management"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "privacy",
+      "name": "Privacy",
+      "aliases": [
+        "data privacy",
+        "gdpr",
+        "hipaa"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "cloud-architecture",
+      "name": "Cloud Architecture",
+      "aliases": [
+        "cloud architecture",
+        "cloud computing",
+        "cloud infrastructure"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "virtualization",
+      "name": "Virtualization",
+      "aliases": [
+        "virtualization",
+        "vmware",
+        "hypervisor"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "windows-server",
+      "name": "Windows Server",
+      "aliases": [
+        "windows server",
+        "active directory"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "macos",
+      "name": "macOS",
+      "aliases": [
+        "macos"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "hardware-design",
+      "name": "Hardware Design",
+      "aliases": [
+        "circuit design",
+        "pcb design",
+        "schematic capture",
+        "soldering"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "cad",
+      "name": "CAD",
+      "aliases": [
+        "cad",
+        "solidworks",
+        "autocad",
+        "fusion 360"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "batch-scripting",
+      "name": "Batch Scripting",
+      "aliases": [
+        "cron",
+        "task scheduling"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "regex",
+      "name": "Regex",
+      "aliases": [
+        "regular expressions",
+        "regex"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "web-scraping",
+      "name": "Web Scraping",
+      "aliases": [
+        "web scraping",
+        "beautifulsoup",
+        "scrapy"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "vector-databases",
+      "name": "Vector Databases",
+      "aliases": [
+        "vector database",
+        "vector databases",
+        "pinecone",
+        "weaviate",
+        "faiss",
+        "vector search"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "embeddings",
+      "name": "Embeddings",
+      "aliases": [
+        "embeddings",
+        "sentence transformers",
+        "semantic search"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "prompt-engineering",
+      "name": "Prompt Engineering",
+      "aliases": [
+        "prompt engineering"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "model-deployment",
+      "name": "Model Deployment",
+      "aliases": [
+        "model deployment",
+        "model serving",
+        "inference optimization"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "experiment-tracking",
+      "name": "Experiment Tracking",
+      "aliases": [
+        "mlflow",
+        "weights & biases",
+        "wandb",
+        "experiment tracking"
+      ],
+      "category": "skill"
+    },
+    {
+      "id": "fintech",
+      "name": "Fintech",
+      "aliases": [
+        "fintech",
+        "financial technology",
+        "financial services"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "trading-systems",
+      "name": "Trading Systems",
+      "aliases": [
+        "trading systems",
+        "electronic trading",
+        "market making",
+        "hedge fund",
+        "proprietary trading",
+        "prop trading"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "quantitative-trading",
+      "name": "Quantitative Trading",
+      "aliases": [
+        "quantitative trading",
+        "algorithmic trading",
+        "algo trading",
+        "systematic trading",
+        "high-frequency trading",
+        "hft",
+        "low latency",
+        "low-latency",
+        "market microstructure"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "payments",
+      "name": "Payments",
+      "aliases": [
+        "payments",
+        "payment processing",
+        "payments infrastructure"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "banking",
+      "name": "Banking",
+      "aliases": [
+        "banking",
+        "capital markets",
+        "investment banking",
+        "asset management",
+        "wealth management"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "insurance",
+      "name": "Insurance",
+      "aliases": [
+        "insurance",
+        "insurtech",
+        "actuarial"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare",
+      "aliases": [
+        "healthcare",
+        "health care",
+        "healthtech",
+        "health tech",
+        "clinical",
+        "patient care",
+        "electronic health records",
+        "ehr"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "biotech",
+      "name": "Biotech",
+      "aliases": [
+        "biotech",
+        "biotechnology",
+        "life sciences",
+        "genomics",
+        "drug discovery"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "pharmaceuticals",
+      "name": "Pharmaceuticals",
+      "aliases": [
+        "pharmaceutical",
+        "pharmaceuticals",
+        "pharma"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "medical-devices",
+      "name": "Medical Devices",
+      "aliases": [
+        "medical device",
+        "medical devices"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "e-commerce",
+      "name": "E-commerce",
+      "aliases": [
+        "e-commerce",
+        "ecommerce",
+        "online retail",
+        "marketplace"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "advertising-tech",
+      "name": "Advertising Tech",
+      "aliases": [
+        "adtech",
+        "ad tech",
+        "advertising technology",
+        "programmatic advertising",
+        "digital advertising"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "aerospace",
+      "name": "Aerospace",
+      "aliases": [
+        "aerospace",
+        "spacecraft",
+        "space systems",
+        "satellite",
+        "satellites",
+        "launch vehicles",
+        "avionics"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "defense",
+      "name": "Defense",
+      "aliases": [
+        "defense",
+        "defence",
+        "national security",
+        "department of defense",
+        "dod"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "automotive",
+      "name": "Automotive",
+      "aliases": [
+        "automotive",
+        "vehicle software"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "autonomous-vehicles",
+      "name": "Autonomous Vehicles",
+      "aliases": [
+        "autonomous vehicles",
+        "autonomous vehicle",
+        "self-driving",
+        "autonomous driving",
+        "adas"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "energy",
+      "name": "Energy",
+      "aliases": [
+        "renewable energy",
+        "clean energy",
+        "power systems",
+        "utilities",
+        "power grid",
+        "wind energy",
+        "oil and gas"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "climate-tech",
+      "name": "Climate Tech",
+      "aliases": [
+        "climate tech",
+        "climate change",
+        "sustainability",
+        "decarbonization",
+        "carbon capture"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "telecommunications",
+      "name": "Telecommunications",
+      "aliases": [
+        "telecommunications",
+        "telecom",
+        "5g",
+        "wireless communications",
+        "rf engineering",
+        "radio frequency"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "iot",
+      "name": "IoT",
+      "aliases": [
+        "iot",
+        "internet of things",
+        "connected devices"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "semiconductors",
+      "name": "Semiconductors",
+      "aliases": [
+        "semiconductor",
+        "semiconductors",
+        "chip design",
+        "vlsi",
+        "asic",
+        "soc design",
+        "integrated circuits",
+        "eda tools",
+        "physical design",
+        "rtl design",
+        "rtl"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "logistics-supply-chain",
+      "name": "Logistics & Supply Chain",
+      "aliases": [
+        "logistics",
+        "supply chain",
+        "warehouse automation",
+        "fulfillment",
+        "freight"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "manufacturing",
+      "name": "Manufacturing",
+      "aliases": [
+        "manufacturing",
+        "industrial automation",
+        "process engineering",
+        "lean manufacturing"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "retail",
+      "name": "Retail",
+      "aliases": [
+        "retail"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "real-estate",
+      "name": "Real Estate",
+      "aliases": [
+        "real estate",
+        "proptech"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "edtech",
+      "name": "Edtech",
+      "aliases": [
+        "edtech",
+        "education technology"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "public-sector",
+      "name": "Public Sector",
+      "aliases": [
+        "public sector",
+        "government technology",
+        "civic tech",
+        "federal government"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "legal-tech",
+      "name": "Legal Tech",
+      "aliases": [
+        "legal tech",
+        "legaltech",
+        "legal technology"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "media-entertainment",
+      "name": "Media & Entertainment",
+      "aliases": [
+        "entertainment",
+        "streaming media",
+        "music industry"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "research",
+      "name": "Research",
+      "aliases": [
+        "research",
+        "applied research",
+        "research engineer",
+        "research scientist",
+        "applied scientist",
+        "publications",
+        "neurips",
+        "icml",
+        "iclr",
+        "cvpr",
+        "emnlp",
+        "peer-reviewed"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "speech-audio",
+      "name": "Speech & Audio",
+      "aliases": [
+        "speech recognition",
+        "speech processing",
+        "text-to-speech",
+        "tts",
+        "asr",
+        "audio processing",
+        "voice ai"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "search-ranking",
+      "name": "Search & Ranking",
+      "aliases": [
+        "information retrieval",
+        "search ranking",
+        "search relevance",
+        "ranking models",
+        "learning to rank"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "fraud-risk-detection",
+      "name": "Fraud & Risk Detection",
+      "aliases": [
+        "fraud detection",
+        "fraud prevention",
+        "anti-fraud",
+        "anomaly detection",
+        "anti-money laundering",
+        "aml"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "developer-tools",
+      "name": "Developer Tools",
+      "aliases": [
+        "developer tools",
+        "devtools",
+        "dev tools",
+        "developer productivity",
+        "developer experience"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "crypto-digital-assets",
+      "name": "Crypto & Digital Assets",
+      "aliases": [
+        "cryptocurrency",
+        "crypto",
+        "digital assets",
+        "defi"
+      ],
+      "category": "domain"
+    },
+    {
+      "id": "infrastructure",
+      "name": "Infrastructure",
+      "aliases": [
+        "infrastructure",
+        "infra",
+        "core infrastructure"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "platform-engineering",
+      "name": "Platform Engineering",
+      "aliases": [
+        "platform engineering",
+        "platform team",
+        "internal tools",
+        "internal platform"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "devops",
+      "name": "DevOps",
+      "aliases": [
+        "devops",
+        "dev ops"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "site-reliability",
+      "name": "Site Reliability",
+      "aliases": [
+        "site reliability",
+        "sre",
+        "reliability engineering"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "ml-engineering",
+      "name": "ML Engineering",
+      "aliases": [
+        "machine learning engineer",
+        "ml engineer",
+        "ml infrastructure",
+        "ml platform"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "data-analyst",
+      "name": "Data Analyst",
+      "aliases": [
+        "data analyst",
+        "business intelligence",
+        "bi analyst"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "security-engineering",
+      "name": "Security Engineering",
+      "aliases": [
+        "security engineer",
+        "security engineering",
+        "security operations",
+        "incident response",
+        "vulnerability research",
+        "red team",
+        "blue team"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "quality-engineering",
+      "name": "Quality Engineering",
+      "aliases": [
+        "quality assurance",
+        "quality engineering",
+        "sdet",
+        "test engineer"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "product-management",
+      "name": "Product Management",
+      "aliases": [
+        "product management",
+        "product manager",
+        "associate product manager"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "program-management",
+      "name": "Program Management",
+      "aliases": [
+        "program management",
+        "program manager",
+        "technical program manager"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "solutions-engineering",
+      "name": "Solutions Engineering",
+      "aliases": [
+        "solutions engineer",
+        "sales engineer",
+        "solutions architect",
+        "forward deployed"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "systems-engineering",
+      "name": "Systems Engineering",
+      "aliases": [
+        "systems engineering",
+        "systems engineer",
+        "systems programming",
+        "systems software"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "hardware-engineering",
+      "name": "Hardware Engineering",
+      "aliases": [
+        "hardware engineer",
+        "hardware engineering",
+        "electrical engineering",
+        "computer engineering"
+      ],
+      "category": "role_type"
+    },
+    {
+      "id": "startup-environment",
+      "name": "Startup Environment",
+      "aliases": [
+        "startup",
+        "early-stage",
+        "early stage",
+        "fast-paced environment"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "open-source",
+      "name": "Open Source",
+      "aliases": [
+        "open source",
+        "open-source",
+        "oss"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "cross-functional",
+      "name": "Cross-functional",
+      "aliases": [
+        "cross-functional",
+        "cross functional"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "customer-facing",
+      "name": "Customer-facing",
+      "aliases": [
+        "customer-facing",
+        "client-facing",
+        "customer facing",
+        "client facing"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "mentorship",
+      "name": "Mentorship",
+      "aliases": [
+        "mentorship",
+        "mentoring"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "hackathons",
+      "name": "Hackathons",
+      "aliases": [
+        "hackathon",
+        "hackathons"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "greenfield",
+      "name": "Greenfield",
+      "aliases": [
+        "greenfield",
+        "from the ground up",
+        "zero to one"
+      ],
+      "category": "work_style"
+    },
+    {
+      "id": "pair-programming",
+      "name": "Pair Programming",
+      "aliases": [
+        "pair programming",
+        "pairing"
+      ],
+      "category": "work_style"
+    }
+  ]
+}

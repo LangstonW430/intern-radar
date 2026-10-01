@@ -69,6 +69,25 @@ export const exportResumesPending = internalQuery({
   },
 });
 
+/** Fetched JD texts for offline vocabulary mining (scripts/vocab-candidates). */
+export const exportJdTexts = internalQuery({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
+    const page = await ctx.db
+      .query("listings")
+      .withIndex("by_jdStatus", (q) => q.eq("jdStatus", "fetched"))
+      .paginate(paginationOpts);
+    return {
+      ...page,
+      page: page.page.map((l) => ({
+        listingId: l._id,
+        title: l.title,
+        jdText: l.jdText ?? null,
+      })),
+    };
+  },
+});
+
 /**
  * Everything the trainer needs, in one export: labeled/feedback rows with
  * their scored feature snapshots, per-user prior weights, and the promoted

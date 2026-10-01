@@ -95,6 +95,11 @@ http.route({
         await ctx.runQuery(internal.ml.exportEmbedPending, { paginationOpts }),
       );
     }
+    if (kind === "jd_texts") {
+      return json(
+        await ctx.runQuery(internal.ml.exportJdTexts, { paginationOpts }),
+      );
+    }
     if (kind === "training") {
       return json(await ctx.runQuery(internal.ml.exportTraining, {}));
     }
