@@ -19,6 +19,8 @@ export interface DigestEmailItem {
   score: number;
   hasJd: boolean;
   wildcard: boolean;
+  /** One-line "why this score" from the top contributions. */
+  why: string | null;
   appliedLink: string;
   upLink: string;
   downLink: string;
@@ -64,6 +66,11 @@ export default function DigestEmail({
                 {item.company} · {item.locations}
                 {item.hasJd ? "" : " · Couldn't read job description"}
               </Text>
+              {item.why && (
+                <Text style={{ margin: 0, color: "#888", fontSize: 13 }}>
+                  Why: {item.why}
+                </Text>
+              )}
               <Text style={{ margin: "4px 0 0 0", fontSize: 13 }}>
                 <Link href={item.appliedLink}>I applied</Link>
                 {"   ·   "}

@@ -23,6 +23,10 @@ function Chip({
   );
 }
 
+function signed(n: number): string {
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}`;
+}
+
 export default function MatchDetail({ listingId }: { listingId: Id<"listings"> }) {
   const detail = useQuery(api.matchesApi.detail, { listingId });
 
@@ -55,6 +59,43 @@ export default function MatchDetail({ listingId }: { listingId: Id<"listings"> }
   return (
     <div className="mt-3 flex flex-col gap-3 rounded border border-neutral-200 bg-neutral-50 p-3 text-sm">
       {detail.whyScore && <p className="font-medium">{detail.whyScore}</p>}
+
+      {detail.breakdown && (
+        <div className="flex flex-col gap-1.5">
+          {detail.breakdown.keywords.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {detail.breakdown.keywords.map((k) => (
+                <Chip
+                  key={k.name}
+                  tone={k.contribution >= 0 ? "green" : "red"}
+                >
+                  {k.name} {signed(k.contribution)}
+                </Chip>
+              ))}
+              {detail.breakdown.keywordOther !== 0 && (
+                <Chip tone="gray">
+                  other keywords {signed(detail.breakdown.keywordOther)}
+                </Chip>
+              )}
+            </div>
+          )}
+          <ul className="max-w-xs text-xs text-neutral-500">
+            {detail.breakdown.structural
+              .filter((s) => s.contribution !== 0)
+              .sort((a, b) => b.contribution - a.contribution)
+              .map((s) => (
+                <li key={s.label} className="flex justify-between gap-4">
+                  <span>{s.label}</span>
+                  <span>{signed(s.contribution)}</span>
+                </li>
+              ))}
+            <li className="flex justify-between gap-4">
+              <span>Baseline</span>
+              <span>{signed(detail.breakdown.bias)}</span>
+            </li>
+          </ul>
+        </div>
+      )}
 
       {!detail.hasJd ? (
         <p className="text-neutral-500">

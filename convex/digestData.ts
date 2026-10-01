@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { whyLine } from "../lib/breakdownView";
 import { internal } from "./_generated/api";
 import { internalMutation, internalQuery } from "./_generated/server";
 
@@ -62,6 +63,7 @@ export const candidates = internalQuery({
         locations: listing.locations.join(" · "),
         url: listing.url,
         hasJd: listing.jdStatus === "fetched",
+        why: whyLine(match.breakdown),
       });
     }
     return rows;

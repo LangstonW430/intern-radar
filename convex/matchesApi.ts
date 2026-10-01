@@ -1,56 +1,14 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+  dominantFactors,
+  FACTOR_LABELS,
+  topPositiveFactors,
+} from "../lib/breakdownView";
 import { keywordInText, type JdExtract } from "../lib/jdExtract";
-import type { ScoreBreakdown } from "../lib/keywordScore";
 import type { Interest } from "../lib/schemas/profileSeed";
 import { keywordDisplayName } from "../lib/vocabulary";
 import { query } from "./_generated/server";
-
-const FACTOR_LABELS: Record<string, string> = {
-  embed_sim_resume: "Similar to your resume",
-  loc_proximity: "Near your preferred location",
-  work_mode_match: "Work mode fits",
-  role_category_match: "Role category fits",
-  sponsorship_match: "Sponsorship fits",
-  class_year_signal: "Class year fits",
-  company_affinity: "Company you've engaged with before",
-  recency: "Recently posted",
-  required_skill_coverage: "You have the required skills",
-  preferred_skill_coverage: "You have preferred skills",
-  degree_fit: "Degree level fits",
-};
-
-interface Factor {
-  label: string;
-  contribution: number;
-}
-
-/** Every named contribution in a stored breakdown, keywords labeled by
- * their display name. */
-function factors(breakdown: ScoreBreakdown): Factor[] {
-  return [
-    ...breakdown.structural.map((s) => ({
-      label: FACTOR_LABELS[s.name] ?? s.name,
-      contribution: s.contribution,
-    })),
-    ...breakdown.keywords.map((k) => ({
-      label:
-        k.contribution >= 0
-          ? `Mentions ${keywordDisplayName(k.id)}`
-          : `Mentions ${keywordDisplayName(k.id)} (works against it)`,
-      contribution: k.contribution,
-    })),
-  ];
-}
-
-function topFactors(breakdown: ScoreBreakdown | undefined): string[] {
-  if (!breakdown) return [];
-  return factors(breakdown)
-    .filter((f) => f.contribution > 0.2)
-    .sort((a, b) => b.contribution - a.contribution)
-    .slice(0, 3)
-    .map((f) => f.label);
-}
 
 export const list = query({
   args: { limit: v.optional(v.number()) },
@@ -93,7 +51,7 @@ export const list = query({
         hasJd: listing.jdStatus === "fetched",
         datePosted: listing.datePosted,
         exploration: match.exploration,
-        topFactors: topFactors(match.breakdown),
+        topFactors: topPositiveFactors(match.breakdown),
         myFeedback: feedbackByListing.get(match.listingId) ?? [],
       });
     }
@@ -153,17 +111,35 @@ export const detail = query({
     // One line: the top contributors by |contribution|, from the stored
     // breakdown — the same numbers the score was built from.
     let whyScore: string | null = null;
-    if (match && match.droppedBy === null && match.breakdown) {
-      const top = factors(match.breakdown)
-        .filter((f) => Math.abs(f.contribution) > 0.15)
-        .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
-        .slice(0, 3)
-        .map((f) => f.label);
+    const scored = match && match.droppedBy === null ? match : null;
+    if (scored?.breakdown) {
+      const top = dominantFactors(scored.breakdown);
       whyScore =
         top.length > 0
-          ? `Scored ${(match.score * 100).toFixed(0)} mainly on: ${top.join("; ").toLowerCase()}`
-          : `Scored ${(match.score * 100).toFixed(0)} with no single dominant factor`;
+          ? `Scored ${(scored.score * 100).toFixed(0)} mainly on: ${top.join("; ").toLowerCase()}`
+          : `Scored ${(scored.score * 100).toFixed(0)} with no single dominant factor`;
     }
+
+    // The full stored breakdown in display form, for the contributions panel.
+    const breakdown = scored?.breakdown
+      ? {
+          bias: scored.breakdown.bias,
+          keywordOther: scored.breakdown.keywordOther,
+          keywords: scored.breakdown.keywords.map((k) => ({
+            name: keywordDisplayName(k.id),
+            weight: k.weight,
+            idf: k.idf,
+            position: k.position,
+            contribution: k.contribution,
+          })),
+          structural: scored.breakdown.structural.map((s) => ({
+            label: FACTOR_LABELS[s.name] ?? s.name,
+            value: s.value,
+            weight: s.weight,
+            contribution: s.contribution,
+          })),
+        }
+      : null;
 
     return {
       url: listing.url,
@@ -177,6 +153,7 @@ export const detail = query({
       responsibilities: (extract?.responsibilities ?? []).slice(0, 5),
       facts: extract?.facts ?? null,
       whyScore,
+      breakdown,
     };
   },
 });

@@ -116,6 +116,7 @@ async function sendForProfile(
       score: row.score,
       hasJd: row.hasJd,
       wildcard: row.wildcard,
+      why: row.why,
       appliedLink: await link("applied"),
       upLink: await link("thumbs_up"),
       downLink: await link("thumbs_down"),
