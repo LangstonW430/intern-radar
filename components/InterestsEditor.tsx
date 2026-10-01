@@ -8,6 +8,8 @@ import {
   type VocabCategory,
   type VocabEntry,
 } from "@/lib/vocabulary";
+import Button from "./ui/Button";
+import { Input, Select } from "./ui/Field";
 
 export interface InterestItem {
   keyword: string;
@@ -67,37 +69,38 @@ export default function InterestsEditor({
       key={entry.id}
       type="button"
       onClick={() => add(entry.name, draftTag)}
-      className="rounded-full border border-neutral-300 px-2 py-0.5 text-neutral-700 hover:border-neutral-500"
+      className="h-6 rounded-full border border-hairline px-2.5 text-xs text-muted transition-colors hover:border-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
     >
       + {entry.name}
     </button>
   );
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-xs text-neutral-500">
+    <div className="flex flex-col gap-2.5">
+      <p className="text-xs text-muted">
         Keywords matched against titles and job descriptions. &quot;hard
         want&quot; requires a mention; &quot;hard avoid&quot; filters the
         listing out; strong and soft set the keyword&apos;s starting weight,
         which your feedback then tunes.
       </p>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1.5">
         {interests.map((interest, i) => (
           <li key={interest.keyword} className="flex items-center gap-2 text-sm">
-            <span className="min-w-28 flex-1">{interest.keyword}</span>
-            <select
+            <span className="min-w-28 flex-1 truncate">{interest.keyword}</span>
+            <Select
               value={interest.tag}
               onChange={(e) => {
                 const next = [...interests];
                 next[i] = { ...interest, tag: e.target.value as "want" | "avoid" };
                 onChange(next);
               }}
-              className="rounded border border-neutral-300 px-1 py-0.5"
+              aria-label={`${interest.keyword} direction`}
+              className="h-8"
             >
               <option value="want">want</option>
               <option value="avoid">avoid</option>
-            </select>
-            <select
+            </Select>
+            <Select
               value={interest.strength}
               onChange={(e) => {
                 const next = [...interests];
@@ -107,36 +110,37 @@ export default function InterestsEditor({
                 };
                 onChange(next);
               }}
-              className="rounded border border-neutral-300 px-1 py-0.5"
+              aria-label={`${interest.keyword} strength`}
+              className="h-8"
             >
               {STRENGTHS.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-            </select>
+            </Select>
             <button
               aria-label={`Remove ${interest.keyword}`}
               onClick={() => onChange(interests.filter((_, j) => j !== i))}
-              className="text-neutral-400 hover:text-neutral-700"
+              className="rounded px-1 text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
             >
               ×
             </button>
           </li>
         ))}
         {interests.length === 0 && (
-          <li className="text-sm text-neutral-400">No interests yet — optional.</li>
+          <li className="text-sm text-muted">No interests yet — optional.</li>
         )}
       </ul>
       {offered.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-neutral-500">Ideas from your resume:</span>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted">Ideas from your resume:</span>
           {offered.slice(0, 8).map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => add(s, "want")}
-              className="rounded-full border border-dashed border-neutral-300 px-2 py-0.5 text-neutral-600 hover:border-neutral-500"
+              className="h-6 rounded-full border border-dashed border-accent/50 px-2.5 text-accent transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-accent"
             >
               + {s}
             </button>
@@ -151,37 +155,37 @@ export default function InterestsEditor({
           setDraft("");
         }}
       >
-        <input
+        <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add a keyword"
-          className="w-48 rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-48"
         />
-        <select
+        <Select
           value={draftTag}
           onChange={(e) => setDraftTag(e.target.value as "want" | "avoid")}
-          className="rounded border border-neutral-300 px-1 py-0.5 text-sm"
+          aria-label="Direction for new keywords"
         >
           <option value="want">want</option>
           <option value="avoid">avoid</option>
-        </select>
-        <button type="submit" className="rounded border border-neutral-300 px-2 py-1 text-sm">
-          Add
-        </button>
+        </Select>
+        <Button type="submit">Add</Button>
       </form>
       <div className="flex flex-col gap-1">
-        <input
+        <Input
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search the vocabulary…"
-          className="w-64 rounded border border-neutral-300 px-2 py-1 text-sm"
+          aria-label="Search the vocabulary"
+          className="w-64"
         />
         {search ? (
-          <div className="flex flex-wrap gap-2 py-1 text-sm">
+          <div className="flex flex-wrap gap-1.5 py-1">
             {searchResults.length > 0 ? (
               searchResults.map(chip)
             ) : (
-              <span className="text-neutral-400">
+              <span className="text-sm text-muted">
                 No matches — add it as free text above.
               </span>
             )}
@@ -189,10 +193,10 @@ export default function InterestsEditor({
         ) : (
           CATEGORIES.map((category) => (
             <details key={category} className="text-sm">
-              <summary className="cursor-pointer py-1 text-neutral-600">
+              <summary className="cursor-pointer py-1 text-muted transition-colors hover:text-ink">
                 {CATEGORY_LABELS[category]}
               </summary>
-              <div className="flex flex-wrap gap-2 py-1">
+              <div className="flex flex-wrap gap-1.5 py-1">
                 {VOCABULARY.filter(
                   (e) => e.category === category && !have.has(e.id),
                 ).map(chip)}

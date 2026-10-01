@@ -5,6 +5,8 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { KeywordWeightMap } from "@/lib/keywordWeights";
 import { keywordDisplayName } from "@/lib/vocabulary";
+import Button from "./ui/Button";
+import { Input } from "./ui/Field";
 
 /**
  * Every keyword with a non-zero weight, editable in place. Unlike the rest
@@ -60,22 +62,24 @@ export default function KeywordWeightsEditor({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-xs text-neutral-500">
+    <div className="flex flex-col gap-2.5">
+      <p className="text-xs text-muted">
         What each keyword adds to a listing&apos;s score (times its rarity).
         Edits apply immediately and become the keyword&apos;s anchor; feedback
         keeps tuning from there.
       </p>
       {entries.length === 0 ? (
-        <p className="text-sm text-neutral-400">
+        <p className="text-sm text-muted">
           No keyword weights yet — add interests, or give feedback on matches.
         </p>
       ) : (
         <ul className="flex flex-col gap-1">
           {entries.map(([id, w]) => (
             <li key={id} className="flex items-center gap-2 text-sm">
-              <span className="min-w-28 flex-1">{keywordDisplayName(id)}</span>
-              <input
+              <span className="min-w-28 flex-1 truncate">
+                {keywordDisplayName(id)}
+              </span>
+              <Input
                 type="number"
                 step={0.1}
                 value={drafts[id] ?? String(w.weight.toFixed(2))}
@@ -83,18 +87,23 @@ export default function KeywordWeightsEditor({
                   setDrafts((d) => ({ ...d, [id]: e.target.value }))
                 }
                 onBlur={() => void saveWeight(id)}
-                className="w-20 rounded border border-neutral-300 px-1 py-0.5 text-right"
+                aria-label={`Weight for ${keywordDisplayName(id)}`}
+                className="h-8 w-20 text-right font-mono tabular-nums"
               />
-              <span className="w-32 text-xs text-neutral-500">
-                initial {w.initial.toFixed(2)} · {w.source}
+              <span className="w-30 text-xs text-muted">
+                starts at{" "}
+                <span className="font-mono tabular-nums">
+                  {w.initial.toFixed(2)}
+                </span>{" "}
+                · {w.source}
               </span>
-              <span className="w-16 text-xs text-neutral-400">
-                seen {w.sightings}×
+              <span className="w-14 font-mono text-xs tabular-nums text-muted">
+                {w.sightings}×
               </span>
               <button
                 aria-label={`Remove ${keywordDisplayName(id)}`}
                 onClick={() => void remove({ keywordId: id })}
-                className="text-neutral-400 hover:text-neutral-700"
+                className="rounded px-1 text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
               >
                 ×
               </button>
@@ -103,15 +112,9 @@ export default function KeywordWeightsEditor({
         </ul>
       )}
       <div>
-        <button
-          type="button"
-          onClick={() => void handleReset()}
-          className="rounded border border-neutral-300 px-2 py-1 text-sm text-neutral-600"
-        >
-          Reset learned weights
-        </button>
+        <Button onClick={() => void handleReset()}>Reset learned weights</Button>
       </div>
-      {status && <p className="text-sm text-red-600">{status}</p>}
+      {status && <p className="text-sm text-neg">{status}</p>}
     </div>
   );
 }

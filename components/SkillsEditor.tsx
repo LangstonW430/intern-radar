@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Button from "./ui/Button";
+import { Input } from "./ui/Field";
 
 export default function SkillsEditor({
   skills,
@@ -23,35 +25,35 @@ export default function SkillsEditor({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap gap-1.5">
         {skills.map((skill) => (
           <span
             key={skill}
-            className="flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-sm"
+            className="inline-flex h-6 items-center gap-1 rounded-full bg-ink/6 px-2.5 text-xs text-ink"
           >
             {skill}
             <button
               aria-label={`Remove ${skill}`}
               onClick={() => onChange(skills.filter((s) => s !== skill))}
-              className="text-neutral-400 hover:text-neutral-700"
+              className="text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
             >
               ×
             </button>
           </span>
         ))}
         {skills.length === 0 && (
-          <span className="text-sm text-neutral-400">No skills yet.</span>
+          <span className="text-sm text-muted">No skills yet.</span>
         )}
       </div>
       {offered.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-neutral-500">From your resume:</span>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted">From your resume:</span>
           {offered.map((s) => (
             <button
               key={s}
               onClick={() => add(s)}
-              className="rounded-full border border-dashed border-neutral-300 px-2 py-0.5 text-neutral-600 hover:border-neutral-500"
+              className="h-6 rounded-full border border-dashed border-hairline px-2.5 text-muted transition-colors hover:border-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
             >
               + {s}
             </button>
@@ -66,15 +68,13 @@ export default function SkillsEditor({
           setDraft("");
         }}
       >
-        <input
+        <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add a skill"
-          className="w-48 rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-48"
         />
-        <button type="submit" className="rounded border border-neutral-300 px-2 py-1 text-sm">
-          Add
-        </button>
+        <Button type="submit">Add</Button>
       </form>
     </div>
   );

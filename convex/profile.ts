@@ -93,6 +93,9 @@ export const updateSettings = mutation({
     subscribed: v.optional(v.boolean()),
     skills: v.optional(v.array(v.string())),
     interests: v.optional(v.array(interestValidator)),
+    gradDate: v.optional(v.string()),
+    classYear: v.optional(v.string()),
+    degreeLevel: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -102,6 +105,9 @@ export const updateSettings = mutation({
     }
     if (args.wildcards < 0 || args.wildcards > 10) {
       throw new Error("wildcards must be between 0 and 10");
+    }
+    if (args.gradDate !== undefined && !/^\d{4}-(0[1-9]|1[0-2])$/.test(args.gradDate)) {
+      throw new Error("gradDate must be YYYY-MM");
     }
     const profile = await ctx.db
       .query("profiles")
@@ -113,6 +119,11 @@ export const updateSettings = mutation({
       threshold: args.threshold,
       frequency: args.frequency,
       wildcards: args.wildcards,
+      ...(args.gradDate !== undefined ? { gradDate: args.gradDate } : {}),
+      ...(args.classYear !== undefined ? { classYear: args.classYear } : {}),
+      ...(args.degreeLevel !== undefined
+        ? { degreeLevel: args.degreeLevel }
+        : {}),
       ...(args.subscribed !== undefined ? { subscribed: args.subscribed } : {}),
       ...(args.skills !== undefined ? { skills: args.skills } : {}),
       ...(args.interests !== undefined
@@ -134,6 +145,28 @@ export const updateSettings = mutation({
       });
     }
     await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+  },
+});
+
+/** Stores freshly extracted resume text (the PDF is already deleted by
+ * resume.processResume). The stale embedding is dropped; the ML job
+ * regenerates it on its next run. */
+export const replaceResume = mutation({
+  args: { resumeText: v.string() },
+  handler: async (ctx, { resumeText }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not signed in");
+    const trimmed = resumeText.trim();
+    if (!trimmed) throw new Error("resumeText is empty");
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) throw new Error("No profile yet");
+    await ctx.db.patch(profile._id, {
+      resumeText: trimmed.slice(0, 50_000),
+      resumeEmbedding: undefined,
+    });
   },
 });
 
