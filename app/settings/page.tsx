@@ -5,6 +5,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import Header from "@/components/Header";
+import RequireProfile from "@/components/RequireProfile";
 import InterestsEditor, { type InterestItem } from "@/components/InterestsEditor";
 import KeywordWeightsEditor from "@/components/KeywordWeightsEditor";
 import SkillsEditor from "@/components/SkillsEditor";
@@ -69,28 +70,23 @@ export default function SettingsPage() {
   const profile = useQuery(api.profile.getMine);
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
-        <h1 className="mb-5 text-2xl font-semibold tracking-tight">Settings</h1>
-        {profile === undefined && (
-          <div className="flex flex-col gap-4" aria-busy>
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        )}
-        {profile === null && (
-          <p className="text-sm text-muted">
-            No profile yet —{" "}
-            <a href="/onboarding" className="font-medium text-accent hover:underline">
-              complete onboarding
-            </a>{" "}
-            first.
-          </p>
-        )}
-        {profile && <SettingsForm key={profile._id} profile={profile} />}
-      </main>
-    </div>
+    <RequireProfile>
+      <div className="min-h-screen">
+        <Header />
+        <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
+          <h1 className="mb-5 text-2xl font-semibold tracking-tight">
+            Settings
+          </h1>
+          {profile === undefined && (
+            <div className="flex flex-col gap-4" aria-busy>
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          )}
+          {profile && <SettingsForm key={profile._id} profile={profile} />}
+        </main>
+      </div>
+    </RequireProfile>
   );
 }
 

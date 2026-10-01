@@ -11,6 +11,7 @@ import {
 } from "react";
 import Header from "@/components/Header";
 import MatchDetail from "@/components/MatchDetail";
+import RequireProfile from "@/components/RequireProfile";
 import MatchFilterBar from "@/components/MatchFilterBar";
 import MatchRow, { type FeedbackKind } from "@/components/MatchRow";
 import EmptyState from "@/components/ui/EmptyState";
@@ -30,14 +31,15 @@ const NOW = Date.now();
 export default function MatchesPage() {
   return (
     <Suspense>
-      <MatchesContent />
+      <RequireProfile>
+        <MatchesContent />
+      </RequireProfile>
     </Suspense>
   );
 }
 
 function MatchesContent() {
   const matches = useQuery(api.matchesApi.list, {});
-  const profile = useQuery(api.profile.getMine);
   const record = useMutation(api.feedbackFns.record);
   const searchParams = useSearchParams();
   // Email "I applied" links land here with ?prompt=<listingId> so the
@@ -112,16 +114,6 @@ function MatchesContent() {
             </p>
           )}
         </div>
-
-        {profile === null && (
-          <div className="mb-5 rounded-lg border border-hairline bg-surface p-4 text-sm">
-            Finish setting up your profile to get matches:{" "}
-            <a href="/onboarding" className="font-medium text-accent hover:underline">
-              complete onboarding
-            </a>
-            .
-          </div>
-        )}
 
         {matches === undefined ? (
           <div className="flex flex-col gap-6 pt-2" aria-busy>
