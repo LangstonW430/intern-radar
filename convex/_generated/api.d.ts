@@ -13,6 +13,7 @@ import type * as authGuard from "../authGuard.js";
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
 import type * as digestData from "../digestData.js";
+import type * as evalExport from "../evalExport.js";
 import type * as feedbackFns from "../feedbackFns.js";
 import type * as http from "../http.js";
 import type * as ingest from "../ingest.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   digest: typeof digest;
   digestData: typeof digestData;
+  evalExport: typeof evalExport;
   feedbackFns: typeof feedbackFns;
   http: typeof http;
   ingest: typeof ingest;

@@ -20,7 +20,7 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
-  type MutationCtx,
+  type QueryCtx,
 } from "./_generated/server";
 import { readKeywordStats } from "./keywordStats";
 
@@ -37,7 +37,7 @@ export function toFilterProfile(profile: Doc<"profiles">): FilterableProfile {
 }
 
 export async function loadScoringContext(
-  ctx: MutationCtx,
+  ctx: QueryCtx,
   profile: Doc<"profiles">,
 ) {
   const feedback = await ctx.db

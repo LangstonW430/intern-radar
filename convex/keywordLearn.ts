@@ -48,7 +48,7 @@ async function evalListingIds(
   );
 }
 
-function listingInputs(
+export function listingInputs(
   listing: Doc<"listings">,
   profile: Doc<"profiles">,
   context: Awaited<ReturnType<typeof loadScoringContext>>,

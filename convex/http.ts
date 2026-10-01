@@ -129,6 +129,23 @@ http.route({
 });
 
 http.route({
+  path: "/admin/eval-export",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    if (!isAuthorized(request)) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const email = new URL(request.url).searchParams.get("email");
+    if (!email) return json({ error: "email required" }, 400);
+    const result = await ctx.runQuery(internal.evalExport.exportEval, {
+      email,
+    });
+    if (!result) return json({ error: `no profile for ${email}` }, 404);
+    return json(result);
+  }),
+});
+
+http.route({
   path: "/admin/import-labels",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
