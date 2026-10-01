@@ -1,8 +1,10 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery } from "convex/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { api } from "@/convex/_generated/api";
 import ThemeToggle from "./ThemeToggle";
 
 function NavLink({ href, children }: { href: string; children: string }) {
@@ -24,6 +26,7 @@ function NavLink({ href, children }: { href: string; children: string }) {
 export default function Header() {
   const { signOut } = useAuthActions();
   const router = useRouter();
+  const amIAdmin = useQuery(api.admin.amIAdmin);
   return (
     <header className="sticky top-0 z-10 border-b border-hairline bg-canvas">
       <div className="mx-auto flex h-12 max-w-4xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -36,6 +39,7 @@ export default function Header() {
           </Link>
           <NavLink href="/matches">Matches</NavLink>
           <NavLink href="/settings">Settings</NavLink>
+          {amIAdmin === true && <NavLink href="/admin">Admin</NavLink>}
         </nav>
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
