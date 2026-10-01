@@ -1,8 +1,8 @@
 # intern-radar
 
-Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new postings against your profile with a self-trained personalized model, and emails matches on your schedule.
+Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new postings against your profile with a per-user keyword-weight model that learns from your feedback, and emails matches on your schedule.
 
-Runs entirely on free tiers (Vercel Hobby, Convex, Resend, GitHub Actions) with no paid AI APIs — embeddings and training use open models via a nightly GitHub Actions job.
+Runs entirely on free tiers (Vercel Hobby, Convex, Resend, GitHub Actions) with no paid AI APIs — scoring and learning run in plain TypeScript inside Convex, and a nightly GitHub Actions job fetches job descriptions (plus optional open-model embeddings).
 
 ## Status
 

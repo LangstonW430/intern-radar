@@ -35,7 +35,7 @@ export default function PrivacyPage() {
       <h2 className="mt-2 font-medium">Deleting your account</h2>
       <p className="text-neutral-600">
         Settings → &quot;Delete my account and data&quot; removes your profile,
-        resume text, matches, feedback, and model weights immediately and
+        resume text, matches, feedback, and keyword weights immediately and
         irreversibly. Digest emails also carry a one-click unsubscribe link.
       </p>
       <p className="mt-4 text-sm">

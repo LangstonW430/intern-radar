@@ -107,8 +107,8 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
       <section className="mb-6">
         <h2 className="mb-2 font-medium">Preference strengths</h2>
         <p className="mb-3 text-sm text-neutral-500">
-          hard filters listings out before scoring; strong and soft set the
-          starting weight the model tunes from your feedback; ignore turns a
+          hard filters listings out before scoring; strong and soft set how
+          much the preference counts toward the score; ignore turns a
           preference off.
         </p>
         <ul className="flex flex-col gap-2">
@@ -230,7 +230,7 @@ function SettingsForm({ profile }: { profile: Doc<"profiles"> }) {
         <h2 className="font-medium text-red-700">Danger zone</h2>
         <p className="my-2 text-sm text-neutral-600">
           Permanently delete your account, resume text, matches, feedback, and
-          model weights. See the{" "}
+          keyword weights. See the{" "}
           <a href="/privacy" className="underline">
             privacy page
           </a>{" "}

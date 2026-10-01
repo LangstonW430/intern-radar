@@ -2,6 +2,26 @@
 
 Status: **approved 2026-09-30** with owner changes folded in (JD fetching moved to the Actions job with expanded source coverage; no-JD penalty; strict incremental exports). Building.
 
+> **Pivot (owner, 2026-10-01): per-user keyword-weight model.** The trained
+> logistic regression (global model + per-user L2-toward-global, nightly
+> Python training, `models`/`userWeights` tables, Rocchio preference vector)
+> is replaced by a per-user keyword → weight map learned **online inside
+> Convex**. A listing's score is `sigmoid(bias + Σ weight·idf·position`
+> `+ Σ strengthWeight·structural)` × NO_JD_PENALTY; every score stores a
+> breakdown that sums to the logit. Feedback applies one capped, decayed,
+> clamped logistic step per event the moment it lands; `keywordLearn:replay`
+> deterministically rebuilds a user's map from history. Vocabulary in
+> `shared/vocabulary.json` (mined with `scripts/vocab-candidates.ts`),
+> constants in `shared/scoring.json` (replaces `shared/features.json`),
+> per-keyword document frequencies in the `keywordStats` table. Labels are
+> now **eval-only** (`scripts/eval.ts` prints precision@10 + AUC, replayed
+> vs initial-only weights). Embeddings remain only for the optional
+> `embed_sim_resume` feature, off by default; the Actions job still fetches
+> JDs and embeds but no longer trains. Anything below that describes
+> training, model promotion, prior weights, `embed_sim_pref`, or the
+> `models`/`userWeights` tables is **superseded**; CLAUDE.md has the
+> current architecture.
+
 > **Scope change (owner, 2026-09-30): open sign-up from day one.** No allowlist —
 > anyone can create an account; `ADMIN_EMAILS` gates `/admin` surfaces only.
 > Added to Phase 1: onboarding (resume upload → unpdf extraction → PDF deleted →
