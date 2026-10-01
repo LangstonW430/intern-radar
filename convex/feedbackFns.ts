@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation } from "./_generated/server";
 
 export const record = mutation({
@@ -25,6 +26,11 @@ export const record = mutation({
       kind,
       source: "web",
       createdAt: Date.now(),
+    });
+    // Every kind — including suggestion answers — updates keyword weights.
+    await ctx.scheduler.runAfter(0, internal.keywordLearn.onFeedback, {
+      userId,
+      listingId,
     });
   },
 });

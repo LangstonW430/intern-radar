@@ -26,7 +26,7 @@ import { readKeywordStats } from "./keywordStats";
 
 const SCORE_BATCH = 50;
 
-function toFilterProfile(profile: Doc<"profiles">): FilterableProfile {
+export function toFilterProfile(profile: Doc<"profiles">): FilterableProfile {
   return {
     classYear: profile.classYear,
     degreeLevel: profile.degreeLevel,
@@ -36,7 +36,10 @@ function toFilterProfile(profile: Doc<"profiles">): FilterableProfile {
   };
 }
 
-async function loadScoringContext(ctx: MutationCtx, profile: Doc<"profiles">) {
+export async function loadScoringContext(
+  ctx: MutationCtx,
+  profile: Doc<"profiles">,
+) {
   const feedback = await ctx.db
     .query("feedback")
     .withIndex("by_user", (q) => q.eq("userId", profile.userId))

@@ -16,6 +16,7 @@ import type * as digestData from "../digestData.js";
 import type * as feedbackFns from "../feedbackFns.js";
 import type * as http from "../http.js";
 import type * as ingest from "../ingest.js";
+import type * as keywordLearn from "../keywordLearn.js";
 import type * as keywordStats from "../keywordStats.js";
 import type * as labels from "../labels.js";
 import type * as lib_github from "../lib/github.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   feedbackFns: typeof feedbackFns;
   http: typeof http;
   ingest: typeof ingest;
+  keywordLearn: typeof keywordLearn;
   keywordStats: typeof keywordStats;
   labels: typeof labels;
   "lib/github": typeof lib_github;

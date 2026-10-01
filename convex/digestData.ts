@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, internalQuery } from "./_generated/server";
 
 /** Profiles eligible for a digest right now, with their settings. */
@@ -121,6 +122,10 @@ export const recordEmailFeedback = internalMutation({
       kind,
       source: "email",
       createdAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internal.keywordLearn.onFeedback, {
+      userId,
+      listingId,
     });
     return { duplicate: false };
   },

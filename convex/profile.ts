@@ -129,6 +129,12 @@ export const updateSettings = mutation({
           }
         : {}),
     });
+    if (args.interests !== undefined) {
+      // New anchors — rebuild the learned layer from feedback history.
+      await ctx.scheduler.runAfter(0, internal.keywordLearn.replay, {
+        userId,
+      });
+    }
     await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
   },
 });
@@ -153,7 +159,8 @@ export const updateKeywordWeight = mutation({
         SCORING_CONFIG,
       ),
     });
-    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+    // The anchor moved — replay feedback on top of it, then rescore.
+    await ctx.scheduler.runAfter(0, internal.keywordLearn.replay, { userId });
   },
 });
 
@@ -173,7 +180,7 @@ export const removeKeywordWeight = mutation({
         args.keywordId,
       ),
     });
-    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+    await ctx.scheduler.runAfter(0, internal.scoring.rescoreUser, { userId });
   },
 });
 
@@ -192,7 +199,7 @@ export const resetLearnedWeights = mutation({
     await ctx.db.patch(profile._id, {
       keywordWeights: resetLearned(profile.keywordWeights ?? {}),
     });
-    await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
+    await ctx.scheduler.runAfter(0, internal.scoring.rescoreUser, { userId });
   },
 });
 

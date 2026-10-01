@@ -98,6 +98,8 @@ export const complete = mutation({
         resumeText: args.resumeText,
       });
     }
+    // Interests set new anchors; replay folds any existing feedback back in.
+    await ctx.scheduler.runAfter(0, internal.keywordLearn.replay, { userId });
     await ctx.scheduler.runAfter(0, internal.scoring.rescoreAll, {});
     return { ok: true };
   },

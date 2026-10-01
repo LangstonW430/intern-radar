@@ -55,8 +55,12 @@ export const backfillListingKeywords = internalAction({
       if (page.isDone) break;
       cursor = page.continueCursor;
     }
-    // Incremental stats can't survive a bulk rewrite — recount.
+    // Incremental stats can't survive a bulk rewrite — recount, then
+    // replay every user's weights against the new vocabulary and IDFs.
     await ctx.runAction(internal.keywordStats.rebuild, {});
+    if (updated > 0) {
+      await ctx.runMutation(internal.keywordLearn.replayAll, {});
+    }
     console.log(`backfillListingKeywords: updated ${updated} listings`);
   },
 });
@@ -75,6 +79,10 @@ export const initKeywordWeights = internalMutation({
           profile.interests ?? [],
           SCORING_CONFIG,
         ),
+      });
+      // Fold any pre-existing feedback into the fresh map.
+      await ctx.scheduler.runAfter(0, internal.keywordLearn.replay, {
+        userId: profile.userId,
       });
       updated++;
     }
