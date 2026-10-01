@@ -1,10 +1,30 @@
 {
   "version": 1,
-  "comment": "Constants for the keyword-weight scoring model, shared by TS scoring and offline tooling.",
+  "comment": "Every tunable constant in the keyword-weight scoring model, shared by TS scoring, learning, and offline tooling.",
+  "bias": -1.0,
   "positionWeights": { "title": 1.5, "qualifications": 1.2, "body": 1.0 },
   "initialWeights": {
     "want": { "strong": 1.0, "soft": 0.5 },
     "avoid": { "strong": -1.5, "soft": -0.75 }
   },
-  "weightClamp": [-3, 3]
+  "weightClamp": [-3, 3],
+  "strengthWeights": { "strong": 1.0, "soft": 0.4, "hard": 0.0, "ignore": 0.0 },
+  "structural": [
+    { "name": "loc_proximity", "strengthPref": "location" },
+    { "name": "work_mode_match", "strengthPref": "workMode" },
+    { "name": "role_category_match", "strengthPref": "roleCategory" },
+    { "name": "sponsorship_match", "strengthPref": "sponsorship" },
+    { "name": "class_year_signal", "strengthPref": "classYear" },
+    { "name": "company_affinity", "weight": 0.5 },
+    { "name": "recency", "weight": 0.5 },
+    { "name": "required_skill_coverage", "weight": 1.0 },
+    { "name": "preferred_skill_coverage", "weight": 0.5 },
+    { "name": "degree_fit", "weight": 0.5 },
+    { "name": "embed_sim_resume", "weight": 2.0, "enabled": false }
+  ],
+  "defaultIdf": 2.0,
+  "idfMax": 4.0,
+  "noJdNeutral": 0.6,
+  "learning": { "learningRate": 0.5, "decay": 0.02, "rareCap": 0.5 },
+  "feedbackWeights": { "applied": 2.0, "default": 1.0 }
 }

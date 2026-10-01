@@ -1,27 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildFeatures,
-  FEATURE_NAMES,
-  FEATURES_FILE,
-  priorWeights,
-  toVector,
+  buildStructuralFeatures,
+  structuralWeights,
   type ScoringListing,
   type ScoringProfile,
 } from "./features";
 import { lookupCity } from "./geo/data";
-import { computePreferenceVector } from "./rocchio";
-import { parseNoJdPenalty, scoreFeatures, sigmoid } from "./score";
+import { parseNoJdPenalty } from "./score";
 import type { Preference } from "./schemas/profileSeed";
-
-const NEUTRAL = FEATURES_FILE.noJdNeutral;
-
-// A unit vector along one axis keeps dot products easy to reason about.
-function unit(dim: number, axis: number): number[] {
-  const v = new Array<number>(dim).fill(0);
-  v[axis] = 1;
-  return v;
-}
-const DIM = 8; // buildFeatures never checks dim; small vectors keep tests readable
+import { SCORING_CONFIG } from "./scoringConfig";
 
 const baseListing: ScoringListing = {
   company: "Acme",
@@ -33,7 +20,6 @@ const baseListing: ScoringListing = {
   degrees: ["bachelors"],
   locations: ["Rochester, NY"],
   geo: [{ lat: 43.155, lon: -77.616, name: "Rochester, NY" }],
-  embedding: unit(DIM, 0),
   jdStatus: "fetched",
   datePosted: Date.now(),
 };
@@ -49,10 +35,8 @@ const baseProfile: ScoringProfile = {
       strength: "soft",
     },
     { type: "workMode", value: ["onsite", "hybrid"], strength: "soft" },
-    { type: "roleCategory", value: ["swe"], strength: "soft" },
+    { type: "roleCategory", value: ["swe"], strength: "strong" },
   ] as Preference[],
-  resumeEmbedding: unit(DIM, 0),
-  preferenceVector: unit(DIM, 0),
 };
 
 const context = {
@@ -61,29 +45,11 @@ const context = {
   lookup: lookupCity,
 };
 
-describe("buildFeatures", () => {
-  it("computes cosine via dot for JD-bearing listings", () => {
-    const f = buildFeatures(baseListing, baseProfile, context);
-    expect(f.embed_sim_resume).toBe(1);
-    expect(f.embed_sim_pref).toBe(1);
-    expect(f.has_jd).toBe(1);
-  });
-
-  it("pins embedding features to neutral without a JD", () => {
-    const f = buildFeatures(
-      { ...baseListing, jdStatus: "pending" },
-      baseProfile,
-      context,
-    );
-    expect(f.embed_sim_resume).toBe(NEUTRAL);
-    expect(f.embed_sim_pref).toBe(NEUTRAL);
-    expect(f.has_jd).toBe(0);
-  });
-
+describe("buildStructuralFeatures", () => {
   it("location proximity decays with distance and is 1 at the preferred city", () => {
-    const home = buildFeatures(baseListing, baseProfile, context);
+    const home = buildStructuralFeatures(baseListing, baseProfile, context);
     expect(home.loc_proximity).toBeCloseTo(1, 1);
-    const far = buildFeatures(
+    const far = buildStructuralFeatures(
       {
         ...baseListing,
         geo: [{ lat: 37.33, lon: -121.89, name: "San Jose, CA" }],
@@ -96,9 +62,9 @@ describe("buildFeatures", () => {
 
   it("remote listing gets proximity 1 only when remote is acceptable", () => {
     const remoteListing = { ...baseListing, remoteType: "remote" };
-    const noRemote = buildFeatures(remoteListing, baseProfile, context);
+    const noRemote = buildStructuralFeatures(remoteListing, baseProfile, context);
     expect(noRemote.loc_proximity).toBe(0); // workMode pref excludes remote
-    const remoteOk = buildFeatures(
+    const remoteOk = buildStructuralFeatures(
       remoteListing,
       {
         ...baseProfile,
@@ -112,12 +78,12 @@ describe("buildFeatures", () => {
   });
 
   it("match features use 1 / 0.5 / 0 encoding", () => {
-    const f = buildFeatures(baseListing, baseProfile, context);
+    const f = buildStructuralFeatures(baseListing, baseProfile, context);
     expect(f.work_mode_match).toBe(1);
     expect(f.role_category_match).toBe(1);
     expect(f.sponsorship_match).toBe(0.5); // no sponsorship pref set
 
-    const mismatched = buildFeatures(
+    const mismatched = buildStructuralFeatures(
       { ...baseListing, remoteType: "remote", category: "quant" },
       baseProfile,
       context,
@@ -125,7 +91,7 @@ describe("buildFeatures", () => {
     expect(mismatched.work_mode_match).toBe(0);
     expect(mismatched.role_category_match).toBe(0);
 
-    const unknowns = buildFeatures(
+    const unknowns = buildStructuralFeatures(
       { ...baseListing, remoteType: "unknown", category: "other" },
       baseProfile,
       context,
@@ -135,13 +101,13 @@ describe("buildFeatures", () => {
   });
 
   it("company affinity and recency", () => {
-    const liked = buildFeatures(baseListing, baseProfile, {
+    const liked = buildStructuralFeatures(baseListing, baseProfile, {
       ...context,
       likedCompanies: new Set(["acme"]),
     });
     expect(liked.company_affinity).toBe(1);
 
-    const old = buildFeatures(
+    const old = buildStructuralFeatures(
       { ...baseListing, datePosted: context.now - 28 * 86_400_000 },
       baseProfile,
       context,
@@ -149,10 +115,43 @@ describe("buildFeatures", () => {
     expect(old.recency).toBeCloseTo(Math.exp(-2), 5);
   });
 
-  it("produces every feature in shared order", () => {
-    const f = buildFeatures(baseListing, baseProfile, context);
-    expect(Object.keys(f).sort()).toEqual([...FEATURE_NAMES].sort());
-    expect(toVector(f)).toHaveLength(FEATURE_NAMES.length);
+  it("produces exactly the enabled structural features", () => {
+    const f = buildStructuralFeatures(baseListing, baseProfile, context);
+    const enabled = SCORING_CONFIG.structural
+      .filter((s) => s.enabled !== false)
+      .map((s) => s.name);
+    expect(Object.keys(f).sort()).toEqual([...enabled].sort());
+    // embed_sim_resume is off by default and must not appear.
+    expect(f.embed_sim_resume).toBeUndefined();
+  });
+
+  it("computes embed_sim_resume only when the config flag enables it", () => {
+    const enabledConfig = {
+      ...SCORING_CONFIG,
+      structural: SCORING_CONFIG.structural.map((s) =>
+        s.name === "embed_sim_resume" ? { ...s, enabled: true } : s,
+      ),
+    };
+    const withVectors = {
+      ...baseListing,
+      embedding: [1, 0, 0],
+    };
+    const profile = { ...baseProfile, resumeEmbedding: [1, 0, 0] };
+    const f = buildStructuralFeatures(
+      withVectors,
+      profile,
+      context,
+      enabledConfig,
+    );
+    expect(f.embed_sim_resume).toBe(1);
+
+    const noJd = buildStructuralFeatures(
+      { ...withVectors, jdStatus: "pending" },
+      profile,
+      context,
+      enabledConfig,
+    );
+    expect(noJd.embed_sim_resume).toBe(SCORING_CONFIG.noJdNeutral);
   });
 });
 
@@ -171,23 +170,21 @@ describe("extraction-based features", () => {
   const skilledProfile = { ...baseProfile, skills: ["python", "Go"] };
 
   it("computes required/preferred coverage against user skills", () => {
-    const f = buildFeatures(withExtract, skilledProfile, context);
+    const f = buildStructuralFeatures(withExtract, skilledProfile, context);
     expect(f.required_skill_coverage).toBe(0.5); // python yes, react no
     expect(f.preferred_skill_coverage).toBe(0); // no AWS
   });
 
   it("is neutral without a JD, extract, or detected section", () => {
-    const noJd = buildFeatures(
+    const noJd = buildStructuralFeatures(
       { ...withExtract, jdStatus: "pending" },
       skilledProfile,
       context,
     );
     expect(noJd.required_skill_coverage).toBe(0.5);
-    expect(noJd.interest_match).toBe(0.5);
-    expect(noJd.avoid_match).toBe(0.5);
     expect(noJd.degree_fit).toBe(0.5);
 
-    const noSections = buildFeatures(
+    const noSections = buildStructuralFeatures(
       {
         ...baseListing,
         jdExtract: { ...extract, requiredSkills: [], preferredSkills: [], facts: { ...extract.facts, degrees: [] } },
@@ -198,7 +195,7 @@ describe("extraction-based features", () => {
     expect(noSections.required_skill_coverage).toBe(0.5);
     expect(noSections.degree_fit).toBe(0.5);
 
-    const noExtract = buildFeatures(
+    const noExtract = buildStructuralFeatures(
       { ...baseListing, jdExtract: null },
       skilledProfile,
       context,
@@ -206,45 +203,10 @@ describe("extraction-based features", () => {
     expect(noExtract.required_skill_coverage).toBe(0.5);
   });
 
-  it("weights interest hits by strength and matches on title + JD", () => {
-    const listing = {
-      ...withExtract,
-      title: "Robotics Software Intern",
-      jdText: "You will work on compilers.",
-    };
-    const profile = {
-      ...baseProfile,
-      interests: [
-        { keyword: "robotics", tag: "want", strength: "strong" },
-        { keyword: "biology", tag: "want", strength: "soft" },
-      ] as never,
-    };
-    const f = buildFeatures(listing, profile, context);
-    expect(f.interest_match).toBeCloseTo(1.0 / 1.5, 5); // strong hit, soft miss
-
-    const avoider = buildFeatures(
-      listing,
-      {
-        ...baseProfile,
-        interests: [
-          { keyword: "compilers", tag: "avoid", strength: "soft" },
-        ] as never,
-      },
-      context,
-    );
-    expect(avoider.avoid_match).toBe(1);
-  });
-
-  it("is neutral when no interests are configured", () => {
-    const f = buildFeatures(withExtract, baseProfile, context);
-    expect(f.interest_match).toBe(0.5);
-    expect(f.avoid_match).toBe(0.5);
-  });
-
   it("degree_fit is 1 on match, 0 on stated mismatch", () => {
-    const fit = buildFeatures(withExtract, skilledProfile, context);
+    const fit = buildStructuralFeatures(withExtract, skilledProfile, context);
     expect(fit.degree_fit).toBe(1); // bachelors profile, bachelors mentioned
-    const misfit = buildFeatures(
+    const misfit = buildStructuralFeatures(
       {
         ...withExtract,
         jdExtract: { ...extract, facts: { ...extract.facts, degrees: ["phd"] } },
@@ -256,92 +218,35 @@ describe("extraction-based features", () => {
   });
 });
 
-describe("priorWeights", () => {
-  it("derives strength-based weights and fixed priors", () => {
-    const weights = priorWeights(baseProfile.preferences);
-    const byName = Object.fromEntries(
-      FEATURE_NAMES.map((name, i) => [name, weights[i]]),
+describe("structuralWeights", () => {
+  it("derives strength-based and fixed weights from the config", () => {
+    const weights = structuralWeights(baseProfile.preferences);
+    expect(weights.loc_proximity).toBe(SCORING_CONFIG.strengthWeights.soft);
+    expect(weights.role_category_match).toBe(
+      SCORING_CONFIG.strengthWeights.strong,
     );
-    expect(byName.bias).toBe(-1);
-    expect(byName.embed_sim_resume).toBe(2);
-    expect(byName.loc_proximity).toBe(0.4); // soft
-    expect(byName.sponsorship_match).toBe(0); // no pref set
-    expect(byName.class_year_signal).toBe(0);
+    expect(weights.sponsorship_match).toBe(0); // no preference set
+    expect(weights.recency).toBe(0.5);
+    expect(weights.required_skill_coverage).toBe(1.0);
+    expect(weights.embed_sim_resume).toBeUndefined(); // disabled by default
   });
 
-  it("hard and ignore strengths contribute zero weight", () => {
-    const weights = priorWeights([
-      { type: "roleCategory", value: ["swe"], strength: "hard" },
-      { type: "workMode", value: ["remote"], strength: "ignore" },
+  it("hard and ignore preferences contribute zero weight", () => {
+    const weights = structuralWeights([
+      { type: "workMode", value: ["onsite"], strength: "hard" },
+      { type: "roleCategory", value: ["swe"], strength: "ignore" },
     ] as Preference[]);
-    const byName = Object.fromEntries(
-      FEATURE_NAMES.map((name, i) => [name, weights[i]]),
-    );
-    expect(byName.role_category_match).toBe(0);
-    expect(byName.work_mode_match).toBe(0);
-  });
-});
-
-describe("scoreFeatures", () => {
-  const features = buildFeatures(baseListing, baseProfile, context);
-  const weights = priorWeights(baseProfile.preferences);
-
-  it("applies sigmoid to the dot product", () => {
-    const { rawScore, score } = scoreFeatures(features, weights, {
-      hasJd: true,
-      noJdPenalty: 0.6,
-    });
-    expect(rawScore).toBeGreaterThan(0);
-    expect(rawScore).toBeLessThan(1);
-    expect(score).toBe(rawScore);
-  });
-
-  it("multiplies by NO_JD_PENALTY only without a JD", () => {
-    const { rawScore, score } = scoreFeatures(features, weights, {
-      hasJd: false,
-      noJdPenalty: 0.6,
-    });
-    expect(score).toBeCloseTo(rawScore * 0.6, 10);
-  });
-
-  it("rejects a weight vector of the wrong length", () => {
-    expect(() =>
-      scoreFeatures(features, [1, 2, 3], { hasJd: true, noJdPenalty: 0.6 }),
-    ).toThrow();
+    expect(weights.work_mode_match).toBe(0);
+    expect(weights.role_category_match).toBe(0);
   });
 });
 
 describe("parseNoJdPenalty", () => {
-  it("defaults to 0.6 on missing or invalid input", () => {
+  it("defaults to 0.6 on missing or invalid values", () => {
     expect(parseNoJdPenalty(undefined)).toBe(0.6);
     expect(parseNoJdPenalty("nope")).toBe(0.6);
+    expect(parseNoJdPenalty("0")).toBe(0.6);
     expect(parseNoJdPenalty("1.5")).toBe(0.6);
     expect(parseNoJdPenalty("0.4")).toBe(0.4);
-  });
-});
-
-describe("sigmoid", () => {
-  it("is 0.5 at zero and monotonic", () => {
-    expect(sigmoid(0)).toBe(0.5);
-    expect(sigmoid(2)).toBeGreaterThan(sigmoid(1));
-  });
-});
-
-describe("computePreferenceVector", () => {
-  const resume = unit(4, 0);
-
-  it("returns the resume direction with no feedback", () => {
-    const v = computePreferenceVector(resume, [], []);
-    expect(v[0]).toBeCloseTo(1, 5);
-  });
-
-  it("moves toward liked and away from disliked, staying unit-length", () => {
-    const liked = [unit(4, 1)];
-    const disliked = [unit(4, 2)];
-    const v = computePreferenceVector(resume, liked, disliked);
-    expect(v[1]).toBeGreaterThan(0);
-    expect(v[2]).toBeLessThan(0);
-    const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
-    expect(norm).toBeCloseTo(1, 6);
   });
 });

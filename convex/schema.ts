@@ -156,12 +156,36 @@ export default defineSchema({
     userId: v.id("users"),
     listingId: v.id("listings"),
     droppedBy: v.union(v.string(), v.null()),
-    // Feature snapshot exactly as scored — training reads these, so they
-    // must reflect what the model saw at the time.
+    // Structural feature values exactly as scored.
     features: v.record(v.string(), v.float64()),
     rawScore: v.number(),
     score: v.number(), // rawScore × NO_JD_PENALTY when no JD
-    modelVersion: v.number(), // 0 = strength-derived priors
+    // Legacy (trained-model era); dropped as matches are re-scored.
+    modelVersion: v.optional(v.number()),
+    // Why this score: contributions sum to the logit (lib/keywordScore).
+    breakdown: v.optional(
+      v.object({
+        bias: v.float64(),
+        keywords: v.array(
+          v.object({
+            id: v.string(),
+            weight: v.float64(),
+            idf: v.float64(),
+            position: v.float64(),
+            contribution: v.float64(),
+          }),
+        ),
+        keywordOther: v.float64(),
+        structural: v.array(
+          v.object({
+            name: v.string(),
+            value: v.float64(),
+            weight: v.float64(),
+            contribution: v.float64(),
+          }),
+        ),
+      }),
+    ),
     exploration: v.boolean(),
     sentAt: v.optional(v.number()),
     createdAt: v.number(),

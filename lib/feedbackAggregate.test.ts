@@ -4,7 +4,7 @@ import {
   type FeedbackEvent,
   type LabelInput,
 } from "./feedbackAggregate";
-import { FEATURES_FILE } from "./features";
+import { SCORING_CONFIG } from "./scoringConfig";
 
 const WEIGHTS = { applied: 2.0, default: 1.0 };
 
@@ -107,7 +107,7 @@ describe("aggregateTrainingRows", () => {
   });
 
   it("shared/features.json carries the tunable weights", () => {
-    expect(FEATURES_FILE.feedbackWeights.applied).toBe(2.0);
-    expect(FEATURES_FILE.feedbackWeights.default).toBe(1.0);
+    expect(SCORING_CONFIG.feedbackWeights.applied).toBe(2.0);
+    expect(SCORING_CONFIG.feedbackWeights.default).toBe(1.0);
   });
 });

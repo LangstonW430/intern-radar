@@ -1,6 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { buildJdExtract, JD_EXTRACT_VERSION } from "../lib/jdExtract";
+import { embedFeatureEnabled } from "../lib/scoringConfig";
 import { extractKeywords, VOCABULARY_VERSION } from "../lib/vocabulary";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -273,21 +274,14 @@ export const importEmbeddingsBatch = internalMutation({
         .withIndex("by_userId", (q) => q.eq("userId", userId))
         .unique();
       if (!profile) continue;
-      await ctx.db.patch(profile._id, {
-        resumeEmbedding: resume.embedding,
-        // Until feedback exists, the preference vector is the resume itself.
-        ...(profile.preferenceVector
-          ? {}
-          : { preferenceVector: resume.embedding }),
-      });
-      // A new resume vector invalidates every similarity — full re-score.
-      await ctx.scheduler.runAfter(0, internal.scoring.updatePreferenceVector, {
-        userId,
-      });
-      await ctx.scheduler.runAfter(1000, internal.scoring.rescoreAll, {});
+      await ctx.db.patch(profile._id, { resumeEmbedding: resume.embedding });
+      // A new resume vector only matters when the embedding feature is on.
+      if (embedFeatureEnabled()) {
+        await ctx.scheduler.runAfter(1000, internal.scoring.rescoreAll, {});
+      }
       applied++;
     }
-    if (rescore.length > 0) {
+    if (rescore.length > 0 && embedFeatureEnabled()) {
       await ctx.scheduler.runAfter(0, internal.scoring.scoreListingsForUsers, {
         listingIds: rescore,
       });

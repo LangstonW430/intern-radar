@@ -1,41 +1,21 @@
-import { z } from "zod";
-import featuresJson from "../shared/features.json";
 import type { FilterableListing, FilterableProfile } from "./filters";
 import { haversineMiles } from "./geo/distance";
 import { geocodeLocations, type CityLookup } from "./geo/parse";
-import { keywordInText, type JdExtract } from "./jdExtract";
-import type { Interest, Preference, Strength } from "./schemas/profileSeed";
+import type { JdExtract } from "./jdExtract";
+import type { Preference, Strength } from "./schemas/profileSeed";
+import {
+  SCORING_CONFIG,
+  embedFeatureEnabled,
+  type ScoringConfig,
+} from "./scoringConfig";
 import { classYearFit } from "./textSignals";
 
 /**
- * The feature vector. shared/features.json is the single source of truth for
- * names, order, priors, and bounds — the Python trainer loads the same file
- * and refuses to run if they disagree.
+ * Structural features: the non-keyword terms of the score. Each has a fixed
+ * per-user weight — from the matching preference's strength, or a constant
+ * in shared/scoring.json — never learned. Keyword terms live in
+ * lib/keywordScore.ts.
  */
-
-const featureDefSchema = z.object({
-  name: z.string(),
-  prior: z.number().optional(),
-  strengthPref: z.string().optional(),
-  bounds: z.tuple([z.number(), z.number()]),
-  neutralWithoutJd: z.boolean().optional(),
-});
-const featuresFileSchema = z.object({
-  version: z.number(),
-  embeddingModel: z.string(),
-  embeddingDim: z.number(),
-  strengthPriors: z.record(z.string(), z.number()),
-  noJdNeutral: z.number(),
-  feedbackWeights: z.object({
-    applied: z.number().positive(),
-    default: z.number().positive(),
-  }),
-  features: z.array(featureDefSchema),
-});
-
-export const FEATURES_FILE = featuresFileSchema.parse(featuresJson);
-export const FEATURE_NAMES = FEATURES_FILE.features.map((f) => f.name);
-export const EMBEDDING_DIM = FEATURES_FILE.embeddingDim;
 
 export interface ScoringListing extends FilterableListing {
   embedding?: number[] | null;
@@ -46,9 +26,7 @@ export interface ScoringListing extends FilterableListing {
 
 export interface ScoringProfile extends FilterableProfile {
   resumeEmbedding?: number[] | null;
-  preferenceVector?: number[] | null;
   skills?: string[] | null;
-  interests?: Interest[] | null;
 }
 
 export interface ScoringContext {
@@ -71,27 +49,13 @@ function strengthOf(preferences: Preference[], type: string): Strength | null {
 
 const DEFAULT_LOC_DECAY_MILES = 50;
 
-export function buildFeatures(
+export function buildStructuralFeatures(
   listing: ScoringListing,
   profile: ScoringProfile,
   context: ScoringContext,
+  config: ScoringConfig = SCORING_CONFIG,
 ): Record<string, number> {
-  const hasJd = listing.jdStatus === "fetched" ? 1 : 0;
-  const neutral = FEATURES_FILE.noJdNeutral;
-
-  // Embedding similarities: vectors are L2-normalized, so cosine = dot.
-  // Without a JD the embedding only reflects the title — decision D7 says
-  // pin these to neutral so it can't push the score either way.
-  let simResume = neutral;
-  let simPref = neutral;
-  if (hasJd && listing.embedding) {
-    simResume = profile.resumeEmbedding
-      ? dot(listing.embedding, profile.resumeEmbedding)
-      : 0;
-    simPref = profile.preferenceVector
-      ? dot(listing.embedding, profile.preferenceVector)
-      : simResume;
-  }
+  const hasJd = listing.jdStatus === "fetched";
 
   // Location proximity: closest preferred place, exponential decay.
   const locPref = profile.preferences.find((p) => p.type === "location");
@@ -183,37 +147,12 @@ export function buildFeatures(
   const requiredSkillCoverage = coverage(extract?.requiredSkills);
   const preferredSkillCoverage = coverage(extract?.preferredSkills);
 
-  const interestText = `${listing.title}\n${listing.jdText ?? ""}`;
-  const strengthWeight = (s: Strength) => (s === "strong" ? 1.0 : 0.5);
-  const softInterests = (tag: "want" | "avoid") =>
-    (profile.interests ?? []).filter(
-      (i) => i.tag === tag && (i.strength === "strong" || i.strength === "soft"),
-    );
-  const interestScore = (tag: "want" | "avoid"): number => {
-    const items = softInterests(tag);
-    if (items.length === 0) return MID; // nothing configured — no information
-    if (!hasJd) return MID; // title alone is too thin to score against
-    let total = 0;
-    let hit = 0;
-    for (const item of items) {
-      const w = strengthWeight(item.strength as Strength);
-      total += w;
-      if (keywordInText(item.keyword, interestText)) hit += w;
-    }
-    return total > 0 ? hit / total : MID;
-  };
-  const interestMatch = interestScore("want");
-  const avoidMatch = interestScore("avoid");
-
   let degreeFit = MID;
   if (extract && extract.facts.degrees.length > 0) {
     degreeFit = extract.facts.degrees.includes(profile.degreeLevel) ? 1 : 0;
   }
 
-  return {
-    bias: 1,
-    embed_sim_resume: simResume,
-    embed_sim_pref: simPref,
+  const features: Record<string, number> = {
     loc_proximity: locProximity,
     work_mode_match: workModeMatch,
     role_category_match: roleCategoryMatch,
@@ -221,26 +160,40 @@ export function buildFeatures(
     class_year_signal: classYearSignal,
     company_affinity: companyAffinity,
     recency,
-    has_jd: hasJd,
     required_skill_coverage: requiredSkillCoverage,
     preferred_skill_coverage: preferredSkillCoverage,
-    interest_match: interestMatch,
-    avoid_match: avoidMatch,
     degree_fit: degreeFit,
   };
+
+  // Optional: resume↔listing embedding similarity, off by default. Vectors
+  // are L2-normalized so cosine = dot; a title-only embedding is pinned to
+  // neutral so it can't push the score either way.
+  if (embedFeatureEnabled(config)) {
+    features.embed_sim_resume =
+      hasJd && listing.embedding
+        ? profile.resumeEmbedding
+          ? dot(listing.embedding, profile.resumeEmbedding)
+          : 0
+        : config.noJdNeutral;
+  }
+
+  return features;
 }
 
-/** Prior weights derived from strengths — used until a model is promoted. */
-export function priorWeights(preferences: Preference[]): number[] {
-  return FEATURES_FILE.features.map((f) => {
+/** The fixed per-user weight of every enabled structural feature. */
+export function structuralWeights(
+  preferences: Preference[],
+  config: ScoringConfig = SCORING_CONFIG,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const f of config.structural) {
+    if (f.enabled === false) continue;
     if (f.strengthPref) {
       const strength = strengthOf(preferences, f.strengthPref);
-      return strength ? (FEATURES_FILE.strengthPriors[strength] ?? 0) : 0;
+      out[f.name] = strength ? config.strengthWeights[strength] : 0;
+    } else {
+      out[f.name] = f.weight ?? 0;
     }
-    return f.prior ?? 0;
-  });
-}
-
-export function toVector(features: Record<string, number>): number[] {
-  return FEATURE_NAMES.map((name) => features[name] ?? 0);
+  }
+  return out;
 }

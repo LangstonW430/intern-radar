@@ -1,40 +1,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { FEATURE_NAMES, priorWeights } from "../lib/features";
 import { keywordInText, type JdExtract } from "../lib/jdExtract";
-import type { Interest, Preference } from "../lib/schemas/profileSeed";
-import type { Doc, Id } from "./_generated/dataModel";
-import { query, type QueryCtx } from "./_generated/server";
-
-async function resolveWeights(
-  ctx: QueryCtx,
-  userId: Id<"users">,
-  profile: Doc<"profiles"> | null,
-): Promise<number[]> {
-  const promoted = (
-    await ctx.db
-      .query("models")
-      .withIndex("by_promoted", (q) => q.eq("promoted", true))
-      .collect()
-  ).sort((a, b) => b.version - a.version)[0];
-  let weights = profile
-    ? priorWeights(profile.preferences as Preference[])
-    : new Array(FEATURE_NAMES.length).fill(0);
-  if (promoted) {
-    const userWeights = await ctx.db
-      .query("userWeights")
-      .withIndex("by_user_version", (q) =>
-        q.eq("userId", userId).eq("modelVersion", promoted.version),
-      )
-      .unique();
-    weights = userWeights?.weights ?? promoted.globalWeights;
-  }
-  return weights;
-}
+import type { ScoreBreakdown } from "../lib/keywordScore";
+import type { Interest } from "../lib/schemas/profileSeed";
+import { keywordDisplayName } from "../lib/vocabulary";
+import { query } from "./_generated/server";
 
 const FACTOR_LABELS: Record<string, string> = {
   embed_sim_resume: "Similar to your resume",
-  embed_sim_pref: "Matches what you've liked",
   loc_proximity: "Near your preferred location",
   work_mode_match: "Work mode fits",
   role_category_match: "Role category fits",
@@ -42,26 +15,41 @@ const FACTOR_LABELS: Record<string, string> = {
   class_year_signal: "Class year fits",
   company_affinity: "Company you've engaged with before",
   recency: "Recently posted",
-  has_jd: "Full description available",
   required_skill_coverage: "You have the required skills",
   preferred_skill_coverage: "You have preferred skills",
-  interest_match: "Mentions your interests",
-  avoid_match: "Mentions things you avoid",
   degree_fit: "Degree level fits",
 };
 
-function topFactors(
-  features: Record<string, number>,
-  weights: number[],
-): string[] {
-  return FEATURE_NAMES.map((name, i) => ({
-    name,
-    contribution: (features[name] ?? 0) * weights[i],
-  }))
-    .filter((f) => f.name !== "bias" && f.contribution > 0.2)
+interface Factor {
+  label: string;
+  contribution: number;
+}
+
+/** Every named contribution in a stored breakdown, keywords labeled by
+ * their display name. */
+function factors(breakdown: ScoreBreakdown): Factor[] {
+  return [
+    ...breakdown.structural.map((s) => ({
+      label: FACTOR_LABELS[s.name] ?? s.name,
+      contribution: s.contribution,
+    })),
+    ...breakdown.keywords.map((k) => ({
+      label:
+        k.contribution >= 0
+          ? `Mentions ${keywordDisplayName(k.id)}`
+          : `Mentions ${keywordDisplayName(k.id)} (works against it)`,
+      contribution: k.contribution,
+    })),
+  ];
+}
+
+function topFactors(breakdown: ScoreBreakdown | undefined): string[] {
+  if (!breakdown) return [];
+  return factors(breakdown)
+    .filter((f) => f.contribution > 0.2)
     .sort((a, b) => b.contribution - a.contribution)
     .slice(0, 3)
-    .map((f) => FACTOR_LABELS[f.name] ?? f.name);
+    .map((f) => f.label);
 }
 
 export const list = query({
@@ -70,12 +58,6 @@ export const list = query({
     const userId = await getAuthUserId(ctx);
     if (userId === null) return [];
     const max = Math.min(limit ?? 50, 100);
-
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-    const weights = await resolveWeights(ctx, userId, profile);
 
     const feedback = await ctx.db
       .query("feedback")
@@ -111,7 +93,7 @@ export const list = query({
         hasJd: listing.jdStatus === "fetched",
         datePosted: listing.datePosted,
         exploration: match.exploration,
-        topFactors: topFactors(match.features, weights),
+        topFactors: topFactors(match.breakdown),
         myFeedback: feedbackByListing.get(match.listingId) ?? [],
       });
     }
@@ -168,18 +150,15 @@ export const detail = query({
       }))
       .filter((i) => i.hit);
 
-    // One line: the top contributors by |feature × weight|, excluding bias.
+    // One line: the top contributors by |contribution|, from the stored
+    // breakdown — the same numbers the score was built from.
     let whyScore: string | null = null;
-    if (match && match.droppedBy === null) {
-      const weights = await resolveWeights(ctx, userId, profile);
-      const top = FEATURE_NAMES.map((name, i) => ({
-        name,
-        contribution: (match.features[name] ?? 0) * weights[i],
-      }))
-        .filter((f) => f.name !== "bias" && Math.abs(f.contribution) > 0.15)
+    if (match && match.droppedBy === null && match.breakdown) {
+      const top = factors(match.breakdown)
+        .filter((f) => Math.abs(f.contribution) > 0.15)
         .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
         .slice(0, 3)
-        .map((f) => FACTOR_LABELS[f.name] ?? f.name);
+        .map((f) => f.label);
       whyScore =
         top.length > 0
           ? `Scored ${(match.score * 100).toFixed(0)} mainly on: ${top.join("; ").toLowerCase()}`

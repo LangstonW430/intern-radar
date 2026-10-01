@@ -1,9 +1,18 @@
 import { v } from "convex/values";
-import { buildFeatures, priorWeights } from "../lib/features";
+import {
+  buildStructuralFeatures,
+  structuralWeights,
+} from "../lib/features";
 import { applyHardFilters, type FilterableProfile } from "../lib/filters";
 import { lookupCity } from "../lib/geo/data";
-import { computePreferenceVector } from "../lib/rocchio";
-import { parseNoJdPenalty, scoreFeatures } from "../lib/score";
+import {
+  customKeywordHits,
+  scoreListing,
+  trimBreakdown,
+  type ScoreBreakdown,
+} from "../lib/keywordScore";
+import type { KeywordStats } from "../lib/keywordStats";
+import { parseNoJdPenalty } from "../lib/score";
 import type { Preference } from "../lib/schemas/profileSeed";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -13,6 +22,7 @@ import {
   internalQuery,
   type MutationCtx,
 } from "./_generated/server";
+import { readKeywordStats } from "./keywordStats";
 
 const SCORE_BATCH = 50;
 
@@ -27,26 +37,6 @@ function toFilterProfile(profile: Doc<"profiles">): FilterableProfile {
 }
 
 async function loadScoringContext(ctx: MutationCtx, profile: Doc<"profiles">) {
-  const promoted = (
-    await ctx.db
-      .query("models")
-      .withIndex("by_promoted", (q) => q.eq("promoted", true))
-      .collect()
-  ).sort((a, b) => b.version - a.version)[0];
-
-  let weights = priorWeights(profile.preferences as Preference[]);
-  let modelVersion = 0;
-  if (promoted) {
-    const userWeights = await ctx.db
-      .query("userWeights")
-      .withIndex("by_user_version", (q) =>
-        q.eq("userId", profile.userId).eq("modelVersion", promoted.version),
-      )
-      .unique();
-    weights = userWeights?.weights ?? promoted.globalWeights;
-    modelVersion = promoted.version;
-  }
-
   const feedback = await ctx.db
     .query("feedback")
     .withIndex("by_user", (q) => q.eq("userId", profile.userId))
@@ -58,17 +48,30 @@ async function loadScoringContext(ctx: MutationCtx, profile: Doc<"profiles">) {
     if (listing) likedCompanies.add(listing.company.trim().toLowerCase());
   }
 
-  return { weights, modelVersion, likedCompanies };
+  return {
+    keywordWeights: profile.keywordWeights ?? {},
+    structuralWeights: structuralWeights(profile.preferences as Preference[]),
+    likedCompanies,
+  };
 }
 
-/** Scores the given listings for every profile and upserts matches. */
+/** Scores the given listings and upserts matches — for every profile, or
+ * only the given users (feedback learning rescopes one user). */
 export const scoreListingsForUsers = internalMutation({
-  args: { listingIds: v.array(v.id("listings")) },
-  handler: async (ctx, { listingIds }) => {
-    const profiles = await ctx.db.query("profiles").collect();
+  args: {
+    listingIds: v.array(v.id("listings")),
+    userIds: v.optional(v.array(v.id("users"))),
+  },
+  handler: async (ctx, { listingIds, userIds }) => {
+    let profiles = await ctx.db.query("profiles").collect();
+    if (userIds) {
+      const wanted = new Set<string>(userIds);
+      profiles = profiles.filter((p) => wanted.has(p.userId));
+    }
     if (profiles.length === 0) return;
     const now = Date.now();
     const noJdPenalty = parseNoJdPenalty(process.env.NO_JD_PENALTY);
+    const stats: KeywordStats = await readKeywordStats(ctx);
 
     for (const profile of profiles) {
       const context = await loadScoringContext(ctx, profile);
@@ -98,8 +101,10 @@ export const scoreListingsForUsers = internalMutation({
         let features: Record<string, number> = {};
         let rawScore = 0;
         let score = 0;
+        let breakdown: ScoreBreakdown | undefined;
         if (pass) {
-          features = buildFeatures(
+          const hasJd = listing.jdStatus === "fetched";
+          features = buildStructuralFeatures(
             {
               ...filterListing,
               embedding: listing.embedding,
@@ -110,16 +115,27 @@ export const scoreListingsForUsers = internalMutation({
             {
               ...filterProfile,
               resumeEmbedding: profile.resumeEmbedding,
-              preferenceVector: profile.preferenceVector,
               skills: profile.skills,
-              interests: profile.interests as never,
             },
             { likedCompanies: context.likedCompanies, now, lookup: lookupCity },
           );
-          ({ rawScore, score } = scoreFeatures(features, context.weights, {
-            hasJd: listing.jdStatus === "fetched",
+          const result = scoreListing({
+            structural: features,
+            structuralWeights: context.structuralWeights,
+            listingKeywords: listing.keywords ?? {},
+            customHits: customKeywordHits(
+              context.keywordWeights,
+              listing.title,
+              hasJd ? listing.jdText : null,
+            ),
+            keywordWeights: context.keywordWeights,
+            stats,
+            hasJd,
             noJdPenalty,
-          }));
+          });
+          rawScore = result.rawScore;
+          score = result.score;
+          breakdown = trimBreakdown(result.breakdown);
         }
 
         const existing = await ctx.db
@@ -129,12 +145,19 @@ export const scoreListingsForUsers = internalMutation({
           )
           .unique();
         if (existing) {
-          await ctx.db.patch(existing._id, {
+          // replace, not patch: drops legacy fields (modelVersion) and any
+          // stale breakdown when the listing is now filtered out.
+          await ctx.db.replace(existing._id, {
+            userId: profile.userId,
+            listingId,
             droppedBy,
             features,
             rawScore,
             score,
-            modelVersion: context.modelVersion,
+            breakdown,
+            exploration: existing.exploration,
+            sentAt: existing.sentAt,
+            createdAt: existing.createdAt,
           });
         } else {
           await ctx.db.insert("matches", {
@@ -144,7 +167,7 @@ export const scoreListingsForUsers = internalMutation({
             features,
             rawScore,
             score,
-            modelVersion: context.modelVersion,
+            breakdown,
             exploration: false,
             createdAt: now,
           });
@@ -154,7 +177,7 @@ export const scoreListingsForUsers = internalMutation({
   },
 });
 
-/** Full re-score: model promotion, preference change, resume change. */
+/** Full re-score: preference change, weight change, vocabulary change. */
 export const rescoreAll = internalAction({
   args: {},
   handler: async (ctx) => {
@@ -179,6 +202,33 @@ export const rescoreAll = internalAction({
   },
 });
 
+/** Re-scores every active listing for one user — after their keyword
+ * weights change (feedback step, settings edit, replay). */
+export const rescoreUser = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    let cursor: string | null = null;
+    let scored = 0;
+    for (;;) {
+      const page: {
+        page: Id<"listings">[];
+        isDone: boolean;
+        continueCursor: string;
+      } = await ctx.runQuery(internal.scoring.listActiveListingIds, { cursor });
+      for (let i = 0; i < page.page.length; i += SCORE_BATCH) {
+        await ctx.runMutation(internal.scoring.scoreListingsForUsers, {
+          listingIds: page.page.slice(i, i + SCORE_BATCH),
+          userIds: [userId],
+        });
+        scored += Math.min(SCORE_BATCH, page.page.length - i);
+      }
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+    console.log(`rescoreUser: scored ${scored} listings for ${userId}`);
+  },
+});
+
 export const listActiveListingIds = internalQuery({
   args: { cursor: v.union(v.string(), v.null()) },
   handler: async (ctx, { cursor }) => {
@@ -187,43 +237,5 @@ export const listActiveListingIds = internalQuery({
       .withIndex("by_active", (q) => q.eq("active", true))
       .paginate({ numItems: 200, cursor });
     return { ...page, page: page.page.map((l) => l._id) };
-  },
-});
-
-/**
- * Rebuilds the Rocchio preference vector from current feedback and re-scores.
- * Run after feedback lands or a fresh resume embedding arrives.
- */
-export const updatePreferenceVector = internalMutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-    if (!profile?.resumeEmbedding) return;
-
-    const feedback = await ctx.db
-      .query("feedback")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    const liked: number[][] = [];
-    const disliked: number[][] = [];
-    for (const entry of feedback) {
-      const listing = await ctx.db.get(entry.listingId);
-      if (!listing?.embedding) continue;
-      if (entry.kind === "applied" || entry.kind === "thumbs_up") {
-        liked.push(listing.embedding);
-      } else if (entry.kind === "thumbs_down") {
-        disliked.push(listing.embedding);
-      }
-    }
-    await ctx.db.patch(profile._id, {
-      preferenceVector: computePreferenceVector(
-        profile.resumeEmbedding,
-        liked,
-        disliked,
-      ),
-    });
   },
 });

@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import { internalMutation, internalQuery } from "./_generated/server";
 
 /** Profiles eligible for a digest right now, with their settings. */
@@ -123,11 +122,6 @@ export const recordEmailFeedback = internalMutation({
       source: "email",
       createdAt: Date.now(),
     });
-    if (kind === "applied" || kind === "thumbs_up" || kind === "thumbs_down") {
-      await ctx.scheduler.runAfter(0, internal.scoring.updatePreferenceVector, {
-        userId,
-      });
-    }
     return { duplicate: false };
   },
 });

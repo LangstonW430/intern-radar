@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import { mutation } from "./_generated/server";
 
 export const record = mutation({
@@ -27,12 +26,5 @@ export const record = mutation({
       source: "web",
       createdAt: Date.now(),
     });
-    // Embedding-level preferences shift; full re-scores happen on the next
-    // model promotion rather than per click.
-    if (kind === "applied" || kind === "thumbs_up" || kind === "thumbs_down") {
-      await ctx.scheduler.runAfter(0, internal.scoring.updatePreferenceVector, {
-        userId,
-      });
-    }
   },
 });

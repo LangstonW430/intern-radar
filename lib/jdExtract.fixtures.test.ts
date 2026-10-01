@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildFeatures } from "./features";
+import { buildStructuralFeatures } from "./features";
 import { buildJdExtract, splitSections } from "./jdExtract";
 import { lookupCity } from "./geo/data";
 
@@ -98,7 +98,7 @@ describe("coverage math end to end on a real JD", () => {
   const context = { likedCompanies: new Set<string>(), now: Date.now(), lookup: lookupCity };
 
   it("computes required coverage as hits over section skills", () => {
-    const f = buildFeatures(listing as never, profile as never, context);
+    const f = buildStructuralFeatures(listing as never, profile as never, context);
     const required = listing.jdExtract.requiredSkills;
     const expected =
       required.filter((s) => ["python", "statistics"].includes(s.toLowerCase()))
