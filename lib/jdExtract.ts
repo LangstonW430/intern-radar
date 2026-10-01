@@ -49,16 +49,24 @@ const HEADING_PATTERNS: [SectionType, RegExp][] = [
   ],
   [
     "responsibilities",
-    /\b(responsibilit|what (you'?ll|you will) (do|be doing|work on)|day[- ]to[- ]day|your role|the role|duties|what to expect|in this role)\b/i,
+    /\b(responsibilit\w*|what (you'?ll|you will) (do|be doing|work on)|day[- ]to[- ]day|your role|the role|duties|what to expect|in this role)\b/i,
   ],
 ];
 
+// Heading-shaped: short, or a bit longer when it ends with a colon
+// ("Typical intern responsibilities may include but are not limited to:").
+// Bulleted lines are content, never headings — "- 3.0 minimum GPA" must not
+// read as a "minimum qualifications" heading.
+function isHeadingShaped(trimmed: string): boolean {
+  if (trimmed.length === 0) return false;
+  if (/^[-–—•·*▪◦]/.test(trimmed)) return false;
+  if (trimmed.length <= MAX_HEADING_LENGTH) return true;
+  return trimmed.length <= 90 && trimmed.endsWith(":");
+}
+
 function headingType(line: string): SectionType | null {
   const trimmed = line.trim();
-  if (trimmed.length === 0 || trimmed.length > MAX_HEADING_LENGTH) return null;
-  // A bulleted line is content, never a heading — "- 3.0 minimum GPA" must
-  // not read as a "minimum qualifications" heading.
-  if (/^[-–—•·*▪◦]/.test(trimmed)) return null;
+  if (!isHeadingShaped(trimmed)) return null;
   for (const [type, pattern] of HEADING_PATTERNS) {
     if (pattern.test(trimmed)) return type;
   }
@@ -78,12 +86,15 @@ export interface JdSections {
   responsibilities: string[];
 }
 
-// An ALL-CAPS short line ("WHY YOU'LL LOVE IT HERE") is some other section's
-// heading — it ends the current section even though we don't classify it.
+// A heading we don't classify still ends the current section: ALL-CAPS
+// lines ("WHY YOU'LL LOVE IT HERE") and short colon-terminated lines
+// ("Benefits:") are some other section's heading.
 function isUnknownHeading(line: string): boolean {
   const trimmed = line.trim();
-  if (trimmed.length === 0 || trimmed.length > MAX_HEADING_LENGTH) return false;
-  if (/^[-–—•·*▪◦]/.test(trimmed)) return false;
+  if (!isHeadingShaped(trimmed)) return false;
+  if (trimmed.length <= MAX_HEADING_LENGTH && trimmed.endsWith(":")) {
+    return true;
+  }
   const letters = trimmed.replace(/[^a-zA-Z]/g, "");
   return letters.length >= 4 && letters === letters.toUpperCase();
 }
