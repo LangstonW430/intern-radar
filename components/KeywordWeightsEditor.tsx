@@ -10,8 +10,9 @@ import { Input } from "./ui/Field";
 
 /**
  * Every keyword with a non-zero weight, editable in place. Unlike the rest
- * of the settings form, these actions apply immediately: an edit makes the
- * value the keyword's anchor (initial = weight, source = user).
+ * of the settings form, these actions apply immediately: an edit sets the
+ * weight to exactly the entered value (source = user), and the anchor is
+ * adjusted so past feedback replays onto that value.
  */
 export default function KeywordWeightsEditor({
   weights,
@@ -65,8 +66,8 @@ export default function KeywordWeightsEditor({
     <div className="flex flex-col gap-2.5">
       <p className="text-xs text-muted">
         What each keyword adds to a listing&apos;s score (times its rarity).
-        Edits apply immediately and become the keyword&apos;s anchor; feedback
-        keeps tuning from there.
+        Edits apply immediately and keep the value you enter; feedback keeps
+        tuning from there.
       </p>
       {entries.length === 0 ? (
         <p className="text-sm text-muted">
@@ -87,6 +88,9 @@ export default function KeywordWeightsEditor({
                   setDrafts((d) => ({ ...d, [id]: e.target.value }))
                 }
                 onBlur={() => void saveWeight(id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
                 aria-label={`Weight for ${keywordDisplayName(id)}`}
                 className="h-8 w-20 text-right font-mono tabular-nums"
               />

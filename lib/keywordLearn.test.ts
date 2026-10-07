@@ -3,6 +3,7 @@ import type { FeedbackEvent } from "./feedbackAggregate";
 import {
   applyFeedbackStep,
   replayWeights,
+  replayWithPinnedWeight,
   type ReplayListingInput,
 } from "./keywordLearn";
 import { keywordIdf } from "./keywordScore";
@@ -177,5 +178,52 @@ describe("replayWeights", () => {
       ],
     };
     expect(replayWeights(withGhost)).toEqual(replayWeights(input));
+  });
+});
+
+describe("replayWithPinnedWeight", () => {
+  const listings = new Map<string, ReplayListingInput>([
+    [
+      "listing-a",
+      {
+        structural: {},
+        listingKeywords: { python: 1.5 },
+        customHits: {},
+        hasJd: true,
+      },
+    ],
+  ]);
+  const events: FeedbackEvent[] = [
+    { userId: "u", listingId: "listing-a", kind: "thumbs_up", createdAt: 1 },
+    { userId: "u", listingId: "listing-a", kind: "applied", createdAt: 2 },
+  ];
+  const input = {
+    anchors: {
+      python: { weight: -1.5, initial: -1.5, source: "user", sightings: 0 },
+    } as KeywordWeightMap,
+    events,
+    listings,
+    structuralWeights: {},
+    stats,
+  };
+
+  it("keeps the entered weight where a plain replay would drift", () => {
+    expect(replayWeights(input)["python"].weight).not.toBeCloseTo(-1.5, 3);
+    const pinned = replayWithPinnedWeight(input, "python", -1.5);
+    expect(pinned["python"].weight).toBe(-1.5);
+    expect(pinned["python"].source).toBe("user");
+    expect(pinned["python"].sightings).toBe(2);
+  });
+
+  it("solves the anchor so replaying from it lands on the entered weight", () => {
+    const pinned = replayWithPinnedWeight(input, "python", -1.5);
+    expect(pinned["python"].initial).toBeLessThan(-1.5); // feedback was positive
+    const again = replayWeights({ ...input, anchors: pinned });
+    expect(again["python"].weight).toBeCloseTo(-1.5, 6);
+  });
+
+  it("uses the entered weight as the anchor when no feedback touches it", () => {
+    const pinned = replayWithPinnedWeight(input, "rust", 0.8);
+    expect(pinned["rust"]).toMatchObject({ weight: 0.8, initial: 0.8 });
   });
 });

@@ -136,3 +136,48 @@ export function replayWeights(input: ReplayInput): KeywordWeightMap {
   }
   return weights;
 }
+
+/**
+ * Replay that lands one keyword exactly on a user-entered weight. A plain
+ * replay restarts the keyword at its anchor and re-applies feedback, so the
+ * value the user typed would drift; instead this solves for the anchor
+ * whose replayed weight equals `target` (fixed-point: shift the anchor by
+ * the miss until it closes — replay is close to anchor + feedback offset).
+ */
+export function replayWithPinnedWeight(
+  input: ReplayInput,
+  id: string,
+  target: number,
+): KeywordWeightMap {
+  const config = input.config ?? SCORING_CONFIG;
+  const pinned = clampWeight(target, config);
+  const [lo, hi] = config.weightClamp;
+  const base = input.anchors[id] ?? {
+    weight: pinned,
+    initial: pinned,
+    source: "user" as const,
+    sightings: 0,
+  };
+
+  let anchor = pinned;
+  let weights: KeywordWeightMap = {};
+  for (let i = 0; i < 25; i++) {
+    weights = replayWeights({
+      ...input,
+      anchors: {
+        ...input.anchors,
+        [id]: { ...base, initial: anchor, source: "user" },
+      },
+    });
+    const miss = pinned - (weights[id]?.weight ?? anchor);
+    if (Math.abs(miss) < 1e-9) break;
+    // Anchors may sit past the weight clamp so a clamped-side target stays
+    // reachable against opposing feedback, within a sane bound.
+    anchor = Math.min(2 * hi, Math.max(2 * lo, anchor + miss));
+  }
+  const entry = weights[id] ?? { ...base, sightings: 0 };
+  return {
+    ...weights,
+    [id]: { ...entry, weight: pinned, initial: anchor, source: "user" },
+  };
+}

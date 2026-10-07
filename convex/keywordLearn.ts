@@ -8,6 +8,7 @@ import { lookupCity } from "../lib/geo/data";
 import {
   applyFeedbackStep,
   replayWeights,
+  replayWithPinnedWeight,
   type ReplayListingInput,
 } from "../lib/keywordLearn";
 import { customKeywordHits, scoreListing } from "../lib/keywordScore";
@@ -157,10 +158,15 @@ export const replayAll = internalMutation({
 });
 
 /** Resets to anchors and re-applies the user's full feedback history —
- * after an anchor edit, an interests change, or a vocabulary change. */
+ * after an anchor edit, an interests change, or a vocabulary change. With
+ * `pin`, that keyword's anchor is solved so its replayed weight is exactly
+ * the value the user entered. */
 export const replay = internalMutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
+  args: {
+    userId: v.id("users"),
+    pin: v.optional(v.object({ keywordId: v.string(), weight: v.number() })),
+  },
+  handler: async (ctx, { userId, pin }) => {
     const profile = await ctx.db
       .query("profiles")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -185,13 +191,16 @@ export const replay = internalMutation({
       listings.set(listingId, listingInputs(listing, profile, context, now));
     }
 
-    const weights = replayWeights({
+    const replayInput = {
       anchors: context.keywordWeights,
       events: events.map(toEvent),
       listings,
       structuralWeights: context.structuralWeights,
       stats,
-    });
+    };
+    const weights = pin
+      ? replayWithPinnedWeight(replayInput, pin.keywordId, pin.weight)
+      : replayWeights(replayInput);
     await ctx.db.patch(profile._id, { keywordWeights: weights });
     await ctx.scheduler.runAfter(0, internal.scoring.rescoreUser, { userId });
   },

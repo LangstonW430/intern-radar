@@ -170,7 +170,8 @@ export const replaceResume = mutation({
   },
 });
 
-/** Settings edit of one keyword weight: becomes the user's anchor. */
+/** Settings edit of one keyword weight: the entered value is the weight,
+ * and the replay solves for the anchor that keeps it there. */
 export const updateKeywordWeight = mutation({
   args: { keywordId: v.string(), weight: v.number() },
   handler: async (ctx, args) => {
@@ -190,8 +191,12 @@ export const updateKeywordWeight = mutation({
         SCORING_CONFIG,
       ),
     });
-    // The anchor moved — replay feedback on top of it, then rescore.
-    await ctx.scheduler.runAfter(0, internal.keywordLearn.replay, { userId });
+    // Replay feedback with the keyword pinned to the entered value, then
+    // rescore.
+    await ctx.scheduler.runAfter(0, internal.keywordLearn.replay, {
+      userId,
+      pin: { keywordId: args.keywordId, weight: args.weight },
+    });
   },
 });
 
