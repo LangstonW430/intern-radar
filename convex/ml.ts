@@ -1,6 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { buildJdExtract, JD_EXTRACT_VERSION } from "../lib/jdExtract";
+import { trimJdText } from "../lib/jdTrim";
 import { embedFeatureEnabled } from "../lib/scoringConfig";
 import { extractKeywords, VOCABULARY_VERSION } from "../lib/vocabulary";
 import { internal } from "./_generated/api";
@@ -41,10 +42,16 @@ export const exportJdPending = internalQuery({
   },
 });
 
-/** Listings whose stored embedding doesn't match their current text. */
+/** Listings whose stored embedding doesn't match their current text.
+ * Empty while embed_sim_resume is disabled: nothing reads the vectors, so
+ * neither the Actions job nor the database should pay for them. Flipping the
+ * flag on drains the queue (embedPending stays true until then). */
 export const exportEmbedPending = internalQuery({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, { paginationOpts }) => {
+    if (!embedFeatureEnabled()) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
     const page = await ctx.db
       .query("listings")
       .withIndex("by_embedPending", (q) => q.eq("embedPending", true))
@@ -119,7 +126,9 @@ export const importJdBatch = internalMutation({
       const listing = await ctx.db.get(id);
       if (!listing) continue;
       if (item.jdStatus === "fetched") {
-        const keywords = extractKeywords(listing.title, item.jdText ?? null);
+        // Capped at JD_MAX_CHARS: the text is the largest field per listing.
+        const jdText = item.jdText ? trimJdText(item.jdText) : undefined;
+        const keywords = extractKeywords(listing.title, jdText ?? null);
         transitions.push({
           before: listingContribution(listing),
           after: {
@@ -130,8 +139,8 @@ export const importJdBatch = internalMutation({
         await ctx.db.patch(id, {
           jdStatus: "fetched",
           jdSource: item.jdSource,
-          jdText: item.jdText,
-          jdExtract: item.jdText ? buildJdExtract(item.jdText) : undefined,
+          jdText,
+          jdExtract: jdText ? buildJdExtract(jdText) : undefined,
           jdFetchedAt: now,
           jdError: undefined,
           keywords,
@@ -253,7 +262,9 @@ export const importEmbeddingsBatch = internalMutation({
   handler: async (ctx, { items, resumes }) => {
     let applied = 0;
     const rescore: Id<"listings">[] = [];
-    for (const item of items) {
+    // Listing vectors are only stored while the feature that reads them is
+    // on (see exportEmbedPending); resume vectors are few and always kept.
+    for (const item of embedFeatureEnabled() ? items : []) {
       const id = ctx.db.normalizeId("listings", item.listingId);
       if (!id) continue;
       const listing = await ctx.db.get(id);

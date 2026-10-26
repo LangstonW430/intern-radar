@@ -90,7 +90,6 @@ export const listingFieldsValidator = {
   datePosted: v.number(),
   dateUpdated: v.number(),
   active: v.boolean(),
-  raw: v.any(),
   contentHash: v.string(),
 };
 
@@ -99,6 +98,14 @@ export default defineSchema({
 
   listings: defineTable({
     ...listingFieldsValidator,
+    // Legacy copy of the feed record; no longer written (the normalized
+    // fields cover it) and cleared by migrate:shrinkListings.
+    raw: v.optional(v.any()),
+    // Set when the feed drops the listing; cleared if it reappears.
+    deactivatedAt: v.optional(v.number()),
+    // Set by prune:pruneInactive once the heavy fields (jdText, jdExtract,
+    // embedding) were stripped and the listing's matches deleted.
+    prunedAt: v.optional(v.number()),
     jdStatus: v.union(
       v.literal("pending"),
       v.literal("fetched"),
@@ -115,6 +122,8 @@ export default defineSchema({
     jdAttempts: v.number(),
     ingestedAt: v.number(),
     embedPending: v.boolean(),
+    // Only stored while embed_sim_resume is enabled in shared/scoring.json;
+    // otherwise the vector would cost ~3 KB per listing for nothing.
     embedding: v.optional(v.array(v.float64())),
     embeddingVersion: v.optional(v.string()),
     // Vocabulary keyword id → position weight (lib/vocabulary extractKeywords).
@@ -125,7 +134,8 @@ export default defineSchema({
     .index("by_sourceId", ["sourceId"])
     .index("by_active", ["active"])
     .index("by_jdStatus", ["jdStatus"])
-    .index("by_embedPending", ["embedPending"]),
+    .index("by_embedPending", ["embedPending"])
+    .index("by_active_pruned", ["active", "prunedAt"]),
 
   // Compact sourceId → contentHash map so hourly diffs never read full
   // listing documents (bandwidth budget in PLAN.md A5).

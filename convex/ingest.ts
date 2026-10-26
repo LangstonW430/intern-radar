@@ -152,6 +152,7 @@ export const upsertBatch = internalMutation({
         touched.push(
           await ctx.db.insert("listings", {
             ...item,
+            ...(item.active ? {} : { deactivatedAt: now }),
             jdStatus: isJdSupported(item.atsType) ? "pending" : "unsupported",
             jdAttempts: 0,
             ingestedAt: now,
@@ -168,9 +169,14 @@ export const upsertBatch = internalMutation({
         existing.title !== item.title ||
         existing.company !== item.company ||
         existing.category !== item.category;
+      // A pruned listing (prune.ts) lost its JD text; if the feed revives
+      // it, the JD is fetched again as if the URL had changed.
+      const revived =
+        item.active && !existing.active && existing.prunedAt !== undefined;
+      const refetch = urlChanged || revived;
       // A URL change invalidates the fetched JD, so keywords fall back to
       // title-only until the new JD arrives; a title change re-extracts.
-      const keywords = urlChanged
+      const keywords = refetch
         ? extractKeywords(item.title, null)
         : titleChanged
           ? extractKeywords(
@@ -178,7 +184,7 @@ export const upsertBatch = internalMutation({
               existing.jdStatus === "fetched" ? existing.jdText : null,
             )
           : existing.keywords;
-      const nextJdStatus = urlChanged
+      const nextJdStatus = refetch
         ? isJdSupported(item.atsType)
           ? ("pending" as const)
           : ("unsupported" as const)
@@ -194,8 +200,9 @@ export const upsertBatch = internalMutation({
         ...item,
         keywords,
         keywordsVersion: VOCABULARY_VERSION,
-        // The JD lives at the URL; only a URL change makes it stale.
-        ...(urlChanged
+        // The JD lives at the URL; a URL change (or a revival after
+        // pruning) makes it stale.
+        ...(refetch
           ? {
               jdStatus: nextJdStatus,
               jdAttempts: 0,
@@ -205,7 +212,14 @@ export const upsertBatch = internalMutation({
           : {}),
         // Without a JD, the embedding is built from title+company+category.
         ...(titleChanged && !existing.jdText ? { embedPending: true } : {}),
-        ...(urlChanged ? { embedPending: true } : {}),
+        ...(refetch ? { embedPending: true } : {}),
+        // Active again: no longer a prune candidate. Flipped inactive in
+        // place (still listed, active: false): start the prune clock.
+        ...(item.active
+          ? { deactivatedAt: undefined, prunedAt: undefined }
+          : existing.active
+            ? { deactivatedAt: now }
+            : {}),
       });
       touched.push(existing._id);
     }
@@ -283,6 +297,7 @@ export const deactivateBatch = internalMutation({
   args: { sourceIds: v.array(v.string()) },
   handler: async (ctx, { sourceIds }) => {
     const transitions: StatsTransition[] = [];
+    const now = Date.now();
     for (const sourceId of sourceIds) {
       const existing = await ctx.db
         .query("listings")
@@ -293,7 +308,7 @@ export const deactivateBatch = internalMutation({
           before: listingContribution(existing),
           after: { contributes: false, keywordIds: [] },
         });
-        await ctx.db.patch(existing._id, { active: false });
+        await ctx.db.patch(existing._id, { active: false, deactivatedAt: now });
       }
     }
     await applyStatsTransitions(ctx, transitions);

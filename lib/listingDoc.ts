@@ -35,7 +35,6 @@ export interface ListingSourceFields {
   datePosted: number;
   dateUpdated: number;
   active: boolean;
-  raw: unknown;
   contentHash: string;
 }
 
@@ -60,7 +59,6 @@ export function toListingSourceFields(
     datePosted: listing.date_posted * 1000, // feed is unix seconds; we store ms
     dateUpdated: listing.date_updated * 1000,
     active: listing.active,
-    raw: listing,
     contentHash: contentHash(listing),
   };
 }

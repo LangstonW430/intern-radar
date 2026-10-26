@@ -7,7 +7,7 @@ import { extractClassYearMentions } from "./textSignals";
  * section headings, the sections come back empty rather than inferred.
  */
 
-export const JD_EXTRACT_VERSION = 1;
+export const JD_EXTRACT_VERSION = 2;
 
 export interface JdFacts {
   degrees: string[]; // bachelors | masters | phd mentioned as pursued/required
@@ -17,11 +17,13 @@ export interface JdFacts {
   duration: string | null; // e.g. "12-week"
 }
 
+/**
+ * Stored on the listing. Section bullets are NOT stored (they duplicate
+ * jdText and were the largest field on the document); the detail panel
+ * recomputes them with splitSections from the JD text on demand.
+ */
 export interface JdExtract {
   version: number;
-  requirements: string[];
-  preferred: string[];
-  responsibilities: string[];
   skills: string[]; // canonical skill names found anywhere in the JD
   requiredSkills: string[]; // found within the requirements section
   preferredSkills: string[]; // found within the preferred section
@@ -64,7 +66,7 @@ function isHeadingShaped(trimmed: string): boolean {
   return trimmed.length <= 90 && trimmed.endsWith(":");
 }
 
-function headingType(line: string): SectionType | null {
+export function headingType(line: string): SectionType | null {
   const trimmed = line.trim();
   if (!isHeadingShaped(trimmed)) return null;
   for (const [type, pattern] of HEADING_PATTERNS) {
@@ -89,7 +91,7 @@ export interface JdSections {
 // A heading we don't classify still ends the current section: ALL-CAPS
 // lines ("WHY YOU'LL LOVE IT HERE") and short colon-terminated lines
 // ("Benefits:") are some other section's heading.
-function isUnknownHeading(line: string): boolean {
+export function isUnknownHeading(line: string): boolean {
   const trimmed = line.trim();
   if (!isHeadingShaped(trimmed)) return false;
   if (trimmed.length <= MAX_HEADING_LENGTH && trimmed.endsWith(":")) {
@@ -229,7 +231,6 @@ export function buildJdExtract(jdText: string): JdExtract {
   const sections = splitSections(jdText);
   return {
     version: JD_EXTRACT_VERSION,
-    ...sections,
     skills: extractSkills(jdText),
     requiredSkills: extractSkills(sections.requirements.join("\n")),
     preferredSkills: extractSkills(sections.preferred.join("\n")),

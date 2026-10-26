@@ -5,7 +5,11 @@ import {
   FACTOR_LABELS,
   topPositiveFactors,
 } from "../lib/breakdownView";
-import { keywordInText, type JdExtract } from "../lib/jdExtract";
+import {
+  keywordInText,
+  splitSections,
+  type JdExtract,
+} from "../lib/jdExtract";
 import { agePenalty } from "../lib/keywordScore";
 import type { Interest } from "../lib/schemas/profileSeed";
 import { keywordDisplayName } from "../lib/vocabulary";
@@ -88,6 +92,12 @@ export const detail = query({
 
     const hasJd = listing.jdStatus === "fetched";
     const extract = (hasJd ? listing.jdExtract : null) as JdExtract | null;
+    // Section bullets are not stored (they duplicated the JD text); they
+    // are split from the text here, for this one listing only.
+    const sections =
+      hasJd && listing.jdText
+        ? splitSections(listing.jdText)
+        : { requirements: [], preferred: [], responsibilities: [] };
     const userSkills = (profile?.skills ?? []).map((s) => s.trim());
     const userSkillSet = new Set(userSkills.map((s) => s.toLowerCase()));
 
@@ -161,9 +171,9 @@ export const detail = query({
       missingRequired,
       preferredSkills,
       interestHits,
-      requirements: extract?.requirements ?? [],
-      preferred: extract?.preferred ?? [],
-      responsibilities: (extract?.responsibilities ?? []).slice(0, 5),
+      requirements: sections.requirements,
+      preferred: sections.preferred,
+      responsibilities: sections.responsibilities.slice(0, 5),
       facts: extract?.facts ?? null,
       whyScore,
       breakdown,

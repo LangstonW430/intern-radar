@@ -14,4 +14,13 @@ crons.interval(
 // decides whether anything actually sends.
 crons.hourly("digest tick", { minuteUTC: 40 }, internal.digest.tick, {});
 
+// Strips JD text/extract/embedding from listings the feed dropped 14+ days
+// ago and deletes their matches (storage budget; see prune.ts).
+crons.daily(
+  "prune inactive listings",
+  { hourUTC: 9, minuteUTC: 15 },
+  internal.prune.pruneInactive,
+  {},
+);
+
 export default crons;

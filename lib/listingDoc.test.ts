@@ -26,9 +26,9 @@ describe("toListingSourceFields", () => {
     expect(fields.datePosted).toBe(listings[0].date_posted * 1000);
   });
 
-  it("keeps the raw record", () => {
+  it("does not keep the raw feed record (storage; normalized fields cover it)", () => {
     const fields = toListingSourceFields(listings[0]);
-    expect(fields.raw).toEqual(listings[0]);
+    expect(fields).not.toHaveProperty("raw");
   });
 });
 

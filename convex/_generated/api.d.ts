@@ -29,6 +29,7 @@ import type * as ml from "../ml.js";
 import type * as onboarding from "../onboarding.js";
 import type * as otp from "../otp.js";
 import type * as profile from "../profile.js";
+import type * as prune from "../prune.js";
 import type * as resume from "../resume.js";
 import type * as scoring from "../scoring.js";
 
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   onboarding: typeof onboarding;
   otp: typeof otp;
   profile: typeof profile;
+  prune: typeof prune;
   resume: typeof resume;
   scoring: typeof scoring;
 }>;

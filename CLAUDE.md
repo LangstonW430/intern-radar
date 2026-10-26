@@ -94,12 +94,13 @@ How learning applies it (`lib/keywordLearn.ts`, run by `convex/keywordLearn.ts` 
 
 ## Data model (Convex)
 
-- `listings` — sourceId (unique), company, title, category, locations, geo, remoteType, sponsorship, degrees, url, atsType, atsRef, jdStatus, jdSource, jdText, jdExtract, jdFetchedAt, jdError, jdAttempts, datePosted, dateUpdated, active, raw, contentHash, ingestedAt, embedding (vector), embeddingVersion, keywords (id → position weight), keywordsVersion
+- `listings` — sourceId (unique), company, title, category, locations, geo, remoteType, sponsorship, degrees, url, atsType, atsRef, jdStatus, jdSource, jdText (capped at `JD_MAX_CHARS`, 8,000, by `lib/jdTrim.ts` — requirements/preferred sections survive first), jdExtract (skills + facts only; section bullets are split from jdText on demand), jdFetchedAt, jdError, jdAttempts, datePosted, dateUpdated, active, deactivatedAt, prunedAt, contentHash, ingestedAt, embedding (vector — only stored while `embed_sim_resume` is enabled), embeddingVersion, keywords (id → position weight), keywordsVersion. The raw feed record is not stored.
 - `ingestIndex` — compact sourceId→contentHash chunks so hourly diffs never read full listing docs (keeps DB bandwidth ~12–20% of the free-tier 1 GB/mo; estimates in PLAN.md A5)
 - `keywordStats` — single document: totalWithJd, df (keyword → document frequency over active fetched-JD listings)
 - `profiles` — userId, gradDate, classYear, degreeLevel, preferences[{type, value, strength}], skills, interests, keywordWeights (keyword → {weight, initial, source, sightings}), resumeText, resumeEmbedding, threshold, frequency, wildcards, subscribed, lastDigestAt
 - `rateLimits` — key (scope:identifier), windowStart, count; `authPermits` — email, expiresAt, consumed (single-use permits that gate OTP email sends)
 - `matches` — userId, listingId, droppedBy (hard rule or null), features (structural values), rawScore, score (after NO_JD_PENALTY), breakdown (bias + keyword/structural contributions summing to the logit), exploration, sentAt
+- **Storage budget** (Convex free tier 0.5 GB): `convex/prune.ts` runs daily and strips jdText/jdExtract/embedding from listings inactive for 14+ days and deletes their matches; the stub stays so feedback/labels resolve and replay keeps its keywords. A revived listing gets its JD re-fetched. `migrate:shrinkListings` applies the same diet to existing data (strips already-inactive listings immediately).
 - `feedback` — userId, listingId, kind (applied | thumbs_up | thumbs_down | good_suggestion | bad_suggestion), source (web | email), createdAt
 - `labels` — userId, listingId, label, reason, reviewed, split (train | eval), hadJd — eval-only now
 - `ingestState` — lastCommitSha, lastRunAt, lastError
@@ -140,6 +141,7 @@ Removed in the keyword-weight pivot: the `models` and `userWeights` tables, `pro
 - `pnpm tsx scripts/vocab-candidates.ts [minDf]` — mine JD n-gram document frequencies into `data/vocab/candidates.csv` for vocabulary curation
 - `pnpm tsx scripts/build-geonames.ts <cities1000.txt> <admin1CodesASCII.txt>` — rebuild the geo lookup
 - `npx convex run migrate:backfillListingKeywords` / `migrate:initKeywordWeights` / `keywordStats:rebuild` — keyword-model migrations (safe to re-run)
+- `npx convex run migrate:shrinkListings` — one-shot storage shrink (drop raw/embeddings, cap JD text, slim extracts, strip inactive listings + their matches); `npx convex run prune:pruneInactive` runs the daily prune by hand
 - `cd ml && uv run pytest`
 - `cd ml && uv run python -m intern_radar_ml jd|embed` (needs `CONVEX_SITE_URL` + `ML_SHARED_SECRET`)
 

@@ -1,6 +1,8 @@
 import { v } from "convex/values";
+import { buildJdExtract, JD_EXTRACT_VERSION } from "../lib/jdExtract";
+import { JD_MAX_CHARS, trimJdText } from "../lib/jdTrim";
 import { initialKeywordWeights } from "../lib/keywordWeights";
-import { SCORING_CONFIG } from "../lib/scoringConfig";
+import { embedFeatureEnabled, SCORING_CONFIG } from "../lib/scoringConfig";
 import { extractKeywords, VOCABULARY_VERSION } from "../lib/vocabulary";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -9,6 +11,12 @@ import {
   internalMutation,
   internalQuery,
 } from "./_generated/server";
+import {
+  applyStatsTransitions,
+  listingContribution,
+  type StatsTransition,
+} from "./keywordStats";
+import { stripListing } from "./prune";
 
 /**
  * One-shot migrations for the keyword-weight model, run manually with
@@ -278,5 +286,112 @@ export const statusSummary = internalQuery({
       scheduledPending: pending.length,
       scheduledPendingNames: [...new Set(pending.map((s) => s.name))],
     };
+  },
+});
+
+/**
+ * One-shot storage shrink (safe to re-run). Inactive listings are stripped
+ * immediately (prune.ts does this on a 14-day delay going forward) and their
+ * matches deleted. Active listings lose the legacy raw feed copy and, while
+ * embed_sim_resume is off, their embedding; JD text over JD_MAX_CHARS is
+ * trimmed and the extract rebuilt without section bullets, with keywords and
+ * keyword stats kept consistent with the stored text.
+ */
+export const shrinkListings = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    let cursor: string | null = null;
+    const totals = { stripped: 0, slimmed: 0 };
+    for (;;) {
+      const page: {
+        page: Id<"listings">[];
+        isDone: boolean;
+        continueCursor: string;
+      } = await ctx.runQuery(internal.migrate.listListingIdsPage, { cursor });
+      for (let i = 0; i < page.page.length; i += 25) {
+        const result: { stripped: number; slimmed: number } =
+          await ctx.runMutation(internal.migrate.shrinkListingsBatch, {
+            listingIds: page.page.slice(i, i + 25),
+          });
+        totals.stripped += result.stripped;
+        totals.slimmed += result.slimmed;
+      }
+      if (page.isDone) break;
+      cursor = page.continueCursor;
+    }
+    console.log(`shrinkListings: ${JSON.stringify(totals)}`);
+    return totals;
+  },
+});
+
+export const listListingIdsPage = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db
+      .query("listings")
+      .paginate({ numItems: 200, cursor });
+    return {
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+      page: page.page.map((l) => l._id),
+    };
+  },
+});
+
+export const shrinkListingsBatch = internalMutation({
+  args: { listingIds: v.array(v.id("listings")) },
+  handler: async (ctx, { listingIds }) => {
+    const now = Date.now();
+    const keepEmbeddings = embedFeatureEnabled();
+    const transitions: StatsTransition[] = [];
+    let stripped = 0;
+    let slimmed = 0;
+    for (const id of listingIds) {
+      const listing = await ctx.db.get(id);
+      if (!listing) continue;
+
+      if (!listing.active) {
+        if (listing.prunedAt === undefined) {
+          await stripListing(ctx, listing, now);
+          stripped++;
+        }
+        continue;
+      }
+
+      const patch: Record<string, unknown> = {};
+      if (listing.raw !== undefined) patch.raw = undefined;
+      if (!keepEmbeddings && listing.embedding !== undefined) {
+        patch.embedding = undefined;
+        patch.embeddingVersion = undefined;
+        patch.embedPending = true;
+      }
+      const extractVersion =
+        (listing.jdExtract as { version?: number } | undefined)?.version;
+      if (
+        listing.jdStatus === "fetched" &&
+        listing.jdText &&
+        (listing.jdText.length > JD_MAX_CHARS ||
+          extractVersion !== JD_EXTRACT_VERSION)
+      ) {
+        const jdText = trimJdText(listing.jdText);
+        patch.jdExtract = buildJdExtract(jdText);
+        if (jdText !== listing.jdText) {
+          const keywords = extractKeywords(listing.title, jdText);
+          transitions.push({
+            before: listingContribution(listing),
+            after: { contributes: true, keywordIds: Object.keys(keywords) },
+          });
+          patch.jdText = jdText;
+          patch.keywords = keywords;
+          patch.keywordsVersion = VOCABULARY_VERSION;
+        }
+      }
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(id, patch);
+        slimmed++;
+      }
+    }
+    await applyStatsTransitions(ctx, transitions);
+    return { stripped, slimmed };
   },
 });

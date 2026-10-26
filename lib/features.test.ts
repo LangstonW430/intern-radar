@@ -157,10 +157,7 @@ describe("buildStructuralFeatures", () => {
 
 describe("extraction-based features", () => {
   const extract = {
-    version: 1,
-    requirements: ["Experience with Python and React"],
-    preferred: ["AWS a plus"],
-    responsibilities: [],
+    version: 2,
     skills: ["Python", "React", "AWS"],
     requiredSkills: ["Python", "React"],
     preferredSkills: ["AWS"],

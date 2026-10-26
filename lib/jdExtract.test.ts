@@ -136,6 +136,7 @@ describe("buildJdExtract", () => {
       expect.arrayContaining(["AWS", "GCP", "Machine Learning"]),
     );
     expect(extract.skills).toEqual(expect.arrayContaining(["Python", "TypeScript"]));
-    expect(extract.version).toBe(1);
+    expect(extract.version).toBe(2);
+    expect(extract).not.toHaveProperty("requirements");
   });
 });
