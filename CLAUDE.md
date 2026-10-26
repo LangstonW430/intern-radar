@@ -18,7 +18,7 @@ Watches the SimplifyJobs Summer 2027 internship list, filters and ranks new post
 
 ## Stack
 
-- **App:** Next.js (App Router), TypeScript strict, React, Tailwind — hosted on Vercel Hobby
+- **App:** Next.js (App Router), TypeScript strict, React, Tailwind — hosted on Vercel Hobby. Vercel's build command is `npx convex deploy --cmd 'pnpm build'` with `CONVEX_DEPLOY_KEY` set for Production only, so `vercel.json` skips builds for every branch but `main` (a preview build would fail at the Convex deploy step).
 - **Backend/DB:** Convex — tables, crons, scheduled functions, HTTP endpoints, file storage, vector search
 - **Auth:** Convex Auth, email OTP sign-in, open sign-up. Abuse protection: Cloudflare Turnstile on the sign-in email request, rate limits per email / per IP / global daily (sign-in emails share Resend's 100/day free cap with digests, so the mail budget is guarded). OTP emails are only sent when a server-side single-use permit exists, so the gated endpoint can't be bypassed via direct `signIn` calls.
 - **Email:** Resend + React Email, sending from a verified subdomain of the owner's domain
