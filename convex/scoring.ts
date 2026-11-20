@@ -6,6 +6,7 @@ import {
 import { applyHardFilters, type FilterableProfile } from "../lib/filters";
 import { lookupCity } from "../lib/geo/data";
 import {
+  ageInDays,
   customKeywordHits,
   scoreListing,
   trimBreakdown,
@@ -105,8 +106,8 @@ export const scoreListingsForUsers = internalMutation({
         let rawScore = 0;
         let score = 0;
         let breakdown: ScoreBreakdown | undefined;
+        const hasJd = listing.jdStatus === "fetched";
         if (pass) {
-          const hasJd = listing.jdStatus === "fetched";
           features = buildStructuralFeatures(
             {
               ...filterListing,
@@ -135,7 +136,7 @@ export const scoreListingsForUsers = internalMutation({
             stats,
             hasJd,
             noJdPenalty,
-            ageDays: Math.max(0, (now - listing.datePosted) / 86_400_000),
+            ageDays: ageInDays(now, listing.datePosted),
           });
           rawScore = result.rawScore;
           score = result.score;
@@ -159,6 +160,8 @@ export const scoreListingsForUsers = internalMutation({
             rawScore,
             score,
             breakdown,
+            datePosted: listing.datePosted,
+            hasJd,
             exploration: existing.exploration,
             sentAt: existing.sentAt,
             createdAt: existing.createdAt,
@@ -172,6 +175,8 @@ export const scoreListingsForUsers = internalMutation({
             rawScore,
             score,
             breakdown,
+            datePosted: listing.datePosted,
+            hasJd,
             exploration: false,
             createdAt: now,
           });

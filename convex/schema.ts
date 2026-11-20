@@ -169,7 +169,12 @@ export default defineSchema({
     // Structural feature values exactly as scored.
     features: v.record(v.string(), v.float64()),
     rawScore: v.number(),
-    score: v.number(), // rawScore × NO_JD_PENALTY when no JD
+    score: v.number(), // rawScore × NO_JD_PENALTY (no JD) × agePenalty
+    // Inputs to the post-model multipliers, copied from the listing so the
+    // daily re-aging (convex/aging.ts) never reads listing docs. Optional
+    // only for matches scored before they existed.
+    datePosted: v.optional(v.number()),
+    hasJd: v.optional(v.boolean()),
     // Legacy (trained-model era); dropped as matches are re-scored.
     modelVersion: v.optional(v.number()),
     // Why this score: contributions sum to the logit (lib/keywordScore).
@@ -203,7 +208,8 @@ export default defineSchema({
     .index("by_user_listing", ["userId", "listingId"])
     .index("by_user_score", ["userId", "score"])
     .index("by_user_sent", ["userId", "sentAt"])
-    .index("by_user_created", ["userId", "createdAt"]),
+    .index("by_user_created", ["userId", "createdAt"])
+    .index("by_datePosted", ["datePosted"]),
 
   feedback: defineTable({
     userId: v.id("users"),

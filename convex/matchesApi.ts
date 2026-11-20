@@ -10,7 +10,7 @@ import {
   splitSections,
   type JdExtract,
 } from "../lib/jdExtract";
-import { agePenalty } from "../lib/keywordScore";
+import { ageInDays, agePenalty } from "../lib/keywordScore";
 import type { Interest } from "../lib/schemas/profileSeed";
 import { keywordDisplayName } from "../lib/vocabulary";
 import { query } from "./_generated/server";
@@ -159,8 +159,9 @@ export const detail = query({
 
     // Post-model multipliers, computed live so the panel can explain the
     // gap between the model probability and the displayed score.
-    const ageDays = Math.max(0, (Date.now() - listing.datePosted) / 86_400_000);
-    const appliedAgePenalty = agePenalty(ageDays);
+    const appliedAgePenalty = agePenalty(
+      ageInDays(Date.now(), listing.datePosted),
+    );
 
     return {
       url: listing.url,

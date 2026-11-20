@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ageInDays,
   agePenalty,
+  agePenaltyFloorDays,
+  DAY_MS,
+  postModelScore,
   breakdownLogit,
   customKeywordHits,
   keywordIdf,
@@ -165,12 +169,7 @@ describe("customKeywordHits", () => {
   });
 
   it("ignores the JD when there is none", () => {
-    const hits = customKeywordHits(
-      weights,
-      "SWE Intern",
-      null,
-      SCORING_CONFIG,
-    );
+    const hits = customKeywordHits(weights, "SWE Intern", null, SCORING_CONFIG);
     expect(hits).toEqual({});
   });
 });
@@ -192,7 +191,9 @@ describe("trimBreakdown", () => {
         (a, b) => Math.abs(b.contribution) - Math.abs(a.contribution),
       ),
       keywordOther: 0,
-      structural: [{ name: "recency", value: 1, weight: 0.5, contribution: 0.5 }],
+      structural: [
+        { name: "recency", value: 1, weight: 0.5, contribution: 0.5 },
+      ],
     };
     const before = breakdownLogit(breakdown);
     const trimmed = trimBreakdown(breakdown, 3);
@@ -200,5 +201,38 @@ describe("trimBreakdown", () => {
     expect(trimmed.keywords.map((k) => k.id)).toContain("neg");
     expect(breakdownLogit(trimmed)).toBeCloseTo(before, 12);
     expect(trimmed.keywordOther).toBeCloseTo(1 + 2 + 3 + 4 + 5, 12);
+  });
+});
+
+describe("postModelScore", () => {
+  const { graceDays, halfLifeDays, floor } = SCORING_CONFIG.agePenalty;
+
+  it("caps a saturated probability by the age penalty once past grace", () => {
+    expect(postModelScore(0.999, true, 0.6, 3)).toBe(0.999);
+    expect(
+      postModelScore(0.999, true, 0.6, graceDays + halfLifeDays),
+    ).toBeCloseTo(0.4995, 12);
+    expect(postModelScore(1, true, 0.6, 28)).toBeLessThan(0.6);
+  });
+
+  it("stacks the no-JD penalty", () => {
+    expect(postModelScore(1, false, 0.6, 10_000)).toBeCloseTo(0.6 * floor, 12);
+  });
+});
+
+describe("agePenaltyFloorDays", () => {
+  it("is where the penalty reaches its floor", () => {
+    const days = agePenaltyFloorDays();
+    expect(agePenalty(days)).toBeCloseTo(SCORING_CONFIG.agePenalty.floor, 12);
+    expect(agePenalty(days - 1)).toBeGreaterThan(
+      SCORING_CONFIG.agePenalty.floor,
+    );
+  });
+});
+
+describe("ageInDays", () => {
+  it("never goes negative", () => {
+    expect(ageInDays(0, DAY_MS)).toBe(0);
+    expect(ageInDays(3 * DAY_MS, 0)).toBe(3);
   });
 });

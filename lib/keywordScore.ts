@@ -10,7 +10,10 @@ import { CUSTOM_KEYWORD_PREFIX, isCustomKeywordId } from "./vocabulary";
  *
  *   logit    = bias + Σ_k weight_k·idf_k·position_k + Σ_s weight_s·value_s
  *   rawScore = sigmoid(logit)
- *   score    = hasJd ? rawScore : rawScore × NO_JD_PENALTY
+ *   score    = rawScore × (hasJd ? 1 : NO_JD_PENALTY) × agePenalty(ageDays)
+ *
+ * The age penalty depends on the clock, so a stored score goes stale as the
+ * listing ages; convex/aging.ts re-applies it daily via postModelScore.
  *
  * Fully explainable: the breakdown's contributions sum exactly to the logit.
  */
@@ -57,6 +60,37 @@ export function agePenalty(
   const { graceDays, halfLifeDays, floor } = config.agePenalty;
   if (!Number.isFinite(ageDays) || ageDays <= graceDays) return 1;
   return Math.max(floor, 2 ** (-(ageDays - graceDays) / halfLifeDays));
+}
+
+/** Age past which agePenalty is constant at its floor (Infinity when the
+ * floor is 0 and the penalty keeps decaying). */
+export function agePenaltyFloorDays(
+  config: ScoringConfig = SCORING_CONFIG,
+): number {
+  const { graceDays, halfLifeDays, floor } = config.agePenalty;
+  if (floor >= 1) return graceDays;
+  if (floor <= 0) return Infinity;
+  return graceDays + halfLifeDays * Math.log2(1 / floor);
+}
+
+export const DAY_MS = 86_400_000;
+
+export function ageInDays(now: number, datePosted: number): number {
+  return Math.max(0, (now - datePosted) / DAY_MS);
+}
+
+/** The displayed score from the model probability: both fixed post-model
+ * multipliers, never learned. */
+export function postModelScore(
+  rawScore: number,
+  hasJd: boolean,
+  noJdPenalty: number,
+  ageDays: number,
+  config: ScoringConfig = SCORING_CONFIG,
+): number {
+  return (
+    (hasJd ? rawScore : rawScore * noJdPenalty) * agePenalty(ageDays, config)
+  );
 }
 
 /** IDF for a weight-map key: corpus stats for vocabulary keywords, a fixed
@@ -123,7 +157,13 @@ export function scoreListing(input: ScoreListingInput): ScoreResult {
     const kidf = keywordIdf(id, input.stats, config);
     const contribution = entry.weight * kidf * position;
     logit += contribution;
-    keywords.push({ id, weight: entry.weight, idf: kidf, position, contribution });
+    keywords.push({
+      id,
+      weight: entry.weight,
+      idf: kidf,
+      position,
+      contribution,
+    });
   }
   keywords.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 
@@ -136,9 +176,13 @@ export function scoreListing(input: ScoreListingInput): ScoreResult {
   }
 
   const rawScore = sigmoid(logit);
-  const score =
-    (input.hasJd ? rawScore : rawScore * input.noJdPenalty) *
-    agePenalty(input.ageDays ?? 0, config);
+  const score = postModelScore(
+    rawScore,
+    input.hasJd,
+    input.noJdPenalty,
+    input.ageDays ?? 0,
+    config,
+  );
   return {
     logit,
     rawScore,
@@ -158,7 +202,10 @@ export function trimBreakdown(
 ): ScoreBreakdown {
   const positive = breakdown.keywords.filter((k) => k.contribution > 0);
   const negative = breakdown.keywords.filter((k) => k.contribution < 0);
-  const kept = [...positive.slice(0, maxPerSign), ...negative.slice(0, maxPerSign)];
+  const kept = [
+    ...positive.slice(0, maxPerSign),
+    ...negative.slice(0, maxPerSign),
+  ];
   const keptSet = new Set(kept.map((k) => k.id));
   const keywordOther =
     breakdown.keywordOther +

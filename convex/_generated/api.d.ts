@@ -9,6 +9,7 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as aging from "../aging.js";
 import type * as auth from "../auth.js";
 import type * as authGuard from "../authGuard.js";
 import type * as crons from "../crons.js";
@@ -41,6 +42,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  aging: typeof aging;
   auth: typeof auth;
   authGuard: typeof authGuard;
   crons: typeof crons;

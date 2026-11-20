@@ -23,4 +23,13 @@ crons.daily(
   {},
 );
 
+// Stored scores bake in the age penalty as of scoring time; this re-applies
+// it as listings age (see aging.ts).
+crons.daily(
+  "refresh aged match scores",
+  { hourUTC: 9, minuteUTC: 45 },
+  internal.aging.refreshAgedScores,
+  {},
+);
+
 export default crons;
